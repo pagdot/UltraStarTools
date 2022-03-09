@@ -1,0 +1,22 @@
+{
+  "iisSettings": {
+    "windowsAuthentication": false,
+    "anonymousAuthentication": true,
+    "iisExpress": {
+      "applicationUrl": "http://localhost:43461",
+      "sslPort": 44354
+    }
+  },
+  "profiles": {
+    "PlaylistCreator": {
+      "commandName": "Project",
+      "dotnetRunMessages": true,
+      "launchBrowser": true,
+      "applicationUrl": "https://localhost:7128;http://localhost:5130",
+      "environmentVariables": {
+        "ASPNETCORE_ENVIRONMENT": "Development",
+        "ULTRASTAR_DB": "/home/paul/dev/UltraTools/Ultrastar.db"
+      }
+    }
+  }
+}

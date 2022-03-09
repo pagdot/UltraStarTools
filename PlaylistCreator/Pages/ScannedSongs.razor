@@ -1,0 +1,65 @@
+@page "/scannedsongs"
+@using global::Shared
+@using Microsoft.EntityFrameworkCore
+@using System.Globalization
+@inject IDbContextFactory<UltrastarContext> _dbFactory
+<PageTitle>Songs</PageTitle>
+
+<h1>Songs</h1>
+
+<table class="table">
+  <thead>
+    <tr>
+      <th scope="col">#</th>
+      <th scope="col">Artist</th>
+      <th scope="col">Title</th>
+      <th scope="col">Highscore</th>
+      <th scope="col">Highscore Holder</th>
+      <th scope="col">Highscore Date</th>
+    </tr>
+  </thead>
+  <tbody>
+    @{
+      foreach (var x in SongAndScoreList)
+      {
+        <tr>
+          <th scope = "row" > @x.Item1.Id </th>
+          <td> @x.Item1.Artist </td>
+          <td> @x.Item1.Title </td>
+          <td> @x.Item2?.Score </td>
+          <td> @x.Item2?.Player </td>
+          <td> @FromUnix(x.Item2?.Date!.Value) </td>
+        </tr>
+      }
+    }
+  </tbody>
+</table>
+
+
+<button class="btn btn-primary">Click me</button>
+
+@code {
+
+  List<Tuple<UsToolsSong, UsScore?>> SongAndScoreList
+  {
+    get
+    {
+      using var context = _dbFactory.CreateDbContext();
+
+      var scores = context.UsScores.Include(s => s.Song).GroupBy(s => s.SongId).Select(scores => scores.OrderByDescending(s => s.Score).FirstOrDefault()).ToList();
+      var songs = context.UsToolsSongs.ToList();
+      return songs.Select(song => Tuple.Create(song, scores.FirstOrDefault(score => score!.Song.Artist.Trim('\0') == song.Artist && score.Song.Title.Trim('\0') == song.Title))).ToList();
+    }
+  }
+  
+  string FromUnix(long? sec)
+  {
+    if (sec is null)
+      return string.Empty;
+    
+    // Unix timestamp is seconds past epoch
+    DateTime dateTime = new DateTime(1970, 1, 1, 0, 0, 0, 0, DateTimeKind.Local);
+    dateTime = dateTime.AddSeconds( sec.Value );
+    return dateTime.ToString(CultureInfo.CurrentCulture);
+  }
+}
