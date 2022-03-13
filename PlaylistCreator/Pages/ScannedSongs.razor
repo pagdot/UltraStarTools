@@ -22,36 +22,33 @@
   </tr>
   </thead>
   <tbody>
-    @{
-      foreach (var x in SongsWithScores.SongsWithScoresOrderedAndFiltered)
-      {
-        <tr>
-          <th scope = "row" > @x.Song.Id </th>
-          <td> @x.Song.Artist </td>
-          <td> @x.Song.Title </td>
-          <td> @x.Score?.Score </td>
-          <td> @x.Score?.Player </td>
-          <td> @FromUnix(x.Score?.Date!.Value) </td>
-          <td>
-            <div class="dropdown">
-              @{
-                var playlists = Playlists.Where(p => p.Songs.All(s => s.Id != x.Song.Id)).ToList();
-                
-                <button class="btn btn-outline-success dropdown-toggle" disabled="@(!playlists.Any())" type="button" id="dropdownMenu2" data-bs-toggle="dropdown" aria-expanded="false">
-                  Add to
-                </button>
-                <ul class="dropdown-menu" aria-labelledby="dropdownMenu2">
-                  @foreach (var playlist in playlists)
-                  {
-                    <li><a class="dropdown-item" @onclick="() => AddToPlaylist(playlist.Id, x.Song)">@playlist.Name</a></li>
-                  }
-                </ul>
-              }
-            </div>
-          </td>
-        </tr>
-      }
-    }
+  <Virtualize Items="@SongsWithScores.SongsWithScoresOrderedAndFiltered" >
+  <tr>
+        <th scope="row"> @context.Song.Id </th>
+        <td> @context.Song.Artist </td>
+        <td> @context.Song.Title </td>
+        <td> @context.Score?.Score </td>
+        <td> @context.Score?.Player </td>
+        <td> @FromUnix(context.Score?.Date!.Value) </td>
+        <td>
+          <div class="dropdown">
+            @{
+              var playlists = Playlists.Where(p => p.Songs.All(s => s.Id != context.Song.Id)).ToList();
+
+              <button class="btn btn-outline-success dropdown-toggle" disabled="@(!playlists.Any())" type="button" id="dropdownMenu2" data-bs-toggle="dropdown" aria-expanded="false">
+                Add to
+              </button>
+              <ul class="dropdown-menu" aria-labelledby="dropdownMenu2">
+                @foreach (var playlist in playlists)
+                {
+                  <li><a class="dropdown-item" @onclick="() => AddToPlaylist(playlist.Id, context.Song)">@playlist.Name</a></li>
+                }
+              </ul>
+            }
+          </div>
+        </td>
+      </tr>
+  </Virtualize>
   </tbody>
 </table>
 

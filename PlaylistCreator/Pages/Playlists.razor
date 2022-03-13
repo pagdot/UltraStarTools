@@ -42,20 +42,20 @@
   <tbody>
   @{
     var playlists = PlaylistList;
-      foreach (var x in SongsWithScores.SongsWithScoresOrderedAndFiltered)
-      {
+    
+    <Virtualize Items="@SongsWithScores.SongsWithScoresOrderedAndFiltered" >
         <tr>
-          <th scope = "row" > @x.Song.Id </th>
-          <td> @x.Song.Artist </td>
-          <td> @x.Song.Title </td>
-          <td> @x.Score?.Score </td>
-          <td> @x.Score?.Player </td>
-          <td> @FromUnix(x.Score?.Date!.Value) </td>
+          <th scope = "row" > @context.Song.Id </th>
+          <td> @context.Song.Artist </td>
+          <td> @context.Song.Title </td>
+          <td> @context.Score?.Score </td>
+          <td> @context.Score?.Player </td>
+          <td> @FromUnix(context.Score?.Date!.Value) </td>
           <td>
             <div class="input-group">
               <div class="dropdown">
                 @{
-                  var availablePlaylists = playlists.Where(p => p.Songs.All(s => s.Id != x.Song.Id)).ToList();
+                  var availablePlaylists = playlists.Where(p => p.Songs.All(s => s.Id != context.Song.Id)).ToList();
                   
                   <button class="btn btn-outline-success dropdown-toggle" disabled="@(!availablePlaylists.Any())" type="button" id="dropdownMenu2" data-bs-toggle="dropdown" aria-expanded="false">
                     Add to
@@ -63,16 +63,16 @@
                   <ul class="dropdown-menu" aria-labelledby="dropdownMenu2">
                     @foreach (var playlist in availablePlaylists)
                     {
-                      <li><a class="dropdown-item" @onclick="() => AddToPlaylist(playlist.Id, x.Song)">@playlist.Name</a></li>
+                      <li><a class="dropdown-item" @onclick="() => AddToPlaylist(playlist.Id, context.Song)">@playlist.Name</a></li>
                     }
                   </ul>
                 }
               </div>
-              <button type="button" class="btn btn-outline-danger" disabled="@(SelectedPlaylistId < 0)" @onclick="() => RemoveFromPlaylist(SelectedPlaylistId, x.Song.Id)">Remove</button>
+              <button type="button" class="btn btn-outline-danger" disabled="@(SelectedPlaylistId < 0)" @onclick="() => RemoveFromPlaylist(SelectedPlaylistId, context.Song.Id)">Remove</button>
             </div>
           </td>
         </tr>
-      }
+    </Virtualize>
     }
   </tbody>
 </table>
