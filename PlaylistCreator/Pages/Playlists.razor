@@ -2,8 +2,10 @@
 @using global::Shared
 @using Microsoft.EntityFrameworkCore
 @using System.Globalization
+@using System.Text
 @using PlaylistCreator.Models
 @inject IDbContextFactory<UltrastarContext> _dbFactory
+@inject IJSRuntime JS
 <PageTitle>Playlists</PageTitle>
 
 <h1>Playlists</h1>
@@ -20,6 +22,7 @@
         }
       }
     </select>
+    <button class="btn btn-outline-warning" type="button" disabled="@(SelectedPlaylistId is null or < 0 || !PlaylistList.Any())" @onclick="DownloadPlaylist">Download</button>
     <button class="btn btn-outline-danger me-3" type="button" disabled="@(SelectedPlaylistId is null or < 0 || !PlaylistList.Any())" @onclick="RemovePlaylist">Remove</button>
   </div>
 
@@ -200,6 +203,30 @@
     
     context.UsToolsPlaylists.Remove(playlist);
     await context.SaveChangesAsync();
+  }
+
+  private async Task DownloadPlaylist()
+  {
+    var playlist = PlaylistList.FirstOrDefault(p => p.Id == SelectedPlaylistId);
+    
+    if (playlist is null)
+      return;
+
+    var dataBuilder = new StringBuilder();
+    dataBuilder.AppendLine($"#Name: {playlist.Name}");
+    dataBuilder.AppendLine($"#Songs:");
+    foreach (var song in playlist.Songs)
+    {
+      dataBuilder.AppendLine($"{song.Artist} : {song.Title}");
+    }
+    
+    var fileStream = new MemoryStream(Encoding.UTF8.GetBytes(dataBuilder.ToString()));
+
+    var fileName = $"{playlist.Name}.upl";
+
+    using var streamRef = new DotNetStreamReference(stream: fileStream);
+
+    await JS.InvokeVoidAsync("downloadFileFromStream", fileName, streamRef);
   }
 
 }
