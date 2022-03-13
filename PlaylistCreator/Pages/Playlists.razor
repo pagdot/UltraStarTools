@@ -56,21 +56,19 @@
           <td> @FromUnix(context.Score?.Date!.Value) </td>
           <td>
             <div class="input-group">
-              <div class="dropdown">
-                @{
-                  var availablePlaylists = playlists.Where(p => p.Songs.All(s => s.Id != context.Song.Id)).ToList();
-                  
-                  <button class="btn btn-outline-success dropdown-toggle" disabled="@(!availablePlaylists.Any())" type="button" id="dropdownMenu2" data-bs-toggle="dropdown" aria-expanded="false">
-                    Add to
-                  </button>
-                  <ul class="dropdown-menu" aria-labelledby="dropdownMenu2">
-                    @foreach (var playlist in availablePlaylists)
-                    {
-                      <li><a class="dropdown-item" @onclick="() => AddToPlaylist(playlist.Id, context.Song)">@playlist.Name</a></li>
-                    }
-                  </ul>
-                }
-              </div>
+              @{
+                var availablePlaylists = playlists.Where(p => p.Songs.All(s => s.Id != context.Song.Id)).ToList();
+                
+                <button class="btn btn-outline-success dropdown-toggle" disabled="@(!availablePlaylists.Any())" type="button" data-bs-toggle="dropdown" aria-expanded="false">
+                  Add to
+                </button>
+                <ul class="dropdown-menu">
+                  @foreach (var playlist in availablePlaylists)
+                  {
+                    <li><a class="dropdown-item" @onclick="() => AddToPlaylist(playlist.Id, context.Song)">@playlist.Name</a></li>
+                  }
+                </ul>
+              }
               <button type="button" class="btn btn-outline-danger" disabled="@(SelectedPlaylistId < 0)" @onclick="() => RemoveFromPlaylist(SelectedPlaylistId, context.Song.Id)">Remove</button>
             </div>
           </td>
