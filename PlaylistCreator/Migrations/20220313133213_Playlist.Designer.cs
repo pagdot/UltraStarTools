@@ -11,8 +11,8 @@ using Shared;
 namespace PlaylistCreator.Migrations
 {
     [DbContext(typeof(UltrastarContext))]
-    [Migration("20220309183739_Playlist2")]
-    partial class Playlist2
+    [Migration("20220313133213_Playlist")]
+    partial class Playlist
     {
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
@@ -120,22 +120,7 @@ namespace PlaylistCreator.Migrations
 
                     b.HasKey("Id");
 
-                    b.ToTable("ustool_playlists", (string)null);
-                });
-
-            modelBuilder.Entity("Shared.UsToolsPlaylistsSongs", b =>
-                {
-                    b.Property<long>("PlaylistId")
-                        .HasColumnType("INTEGER");
-
-                    b.Property<long>("SongId")
-                        .HasColumnType("INTEGER");
-
-                    b.HasKey("PlaylistId", "SongId");
-
-                    b.HasIndex("SongId");
-
-                    b.ToTable("ustool_playlistssongs", (string)null);
+                    b.ToTable("UsToolsPlaylists");
                 });
 
             modelBuilder.Entity("Shared.UsToolsSong", b =>
@@ -272,6 +257,21 @@ namespace PlaylistCreator.Migrations
                     b.ToTable("us_webs_stats", (string)null);
                 });
 
+            modelBuilder.Entity("UsToolsPlaylistUsToolsSong", b =>
+                {
+                    b.Property<long>("PlaylistsId")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<long>("SongsId")
+                        .HasColumnType("INTEGER");
+
+                    b.HasKey("PlaylistsId", "SongsId");
+
+                    b.HasIndex("SongsId");
+
+                    b.ToTable("UsToolsPlaylistUsToolsSong");
+                });
+
             modelBuilder.Entity("Shared.UsScore", b =>
                 {
                     b.HasOne("Shared.UsSong", "Song")
@@ -283,23 +283,19 @@ namespace PlaylistCreator.Migrations
                     b.Navigation("Song");
                 });
 
-            modelBuilder.Entity("Shared.UsToolsPlaylistsSongs", b =>
+            modelBuilder.Entity("UsToolsPlaylistUsToolsSong", b =>
                 {
-                    b.HasOne("Shared.UsToolsPlaylist", "Playlist")
+                    b.HasOne("Shared.UsToolsPlaylist", null)
                         .WithMany()
-                        .HasForeignKey("PlaylistId")
+                        .HasForeignKey("PlaylistsId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
-                    b.HasOne("Shared.UsToolsSong", "Song")
+                    b.HasOne("Shared.UsToolsSong", null)
                         .WithMany()
-                        .HasForeignKey("SongId")
+                        .HasForeignKey("SongsId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
-
-                    b.Navigation("Playlist");
-
-                    b.Navigation("Song");
                 });
 #pragma warning restore 612, 618
         }

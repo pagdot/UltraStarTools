@@ -17,7 +17,7 @@ namespace Shared
         public virtual DbSet<UsWebsStat> UsWebsStats { get; set; } = null!;
         public virtual DbSet<UsToolsSong> UsToolsSongs { get; set; } = null!;
         public virtual DbSet<UsToolsPlaylist> UsToolsPlaylists { get; set; } = null!;
-        public virtual DbSet<UsToolsPlaylistsSongs> UsToolsPlaylistsSongs { get; set; } = null!;
+        // public virtual DbSet<UsToolsPlaylistsSongs> UsToolsPlaylistsSongs { get; set; } = null!;
 
         protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
         {
@@ -91,23 +91,9 @@ namespace Shared
                 entity.Property(e => e.WebId).HasColumnName("WebID");
             });
 
-            modelBuilder.Entity<UsToolsSong>(entity =>
-            {
-            });
-
             modelBuilder.Entity<UsToolsPlaylist>(entity =>
             {
-                entity.ToTable("ustool_playlists");
-            });
-
-            modelBuilder.Entity<UsToolsPlaylistsSongs>(entity =>
-            {
-                entity.ToTable("ustool_playlistssongs");
-
-                entity.HasKey(e => new {e.PlaylistId, e.SongId});
-
-                entity.HasOne(e => e.Playlist).WithMany().HasForeignKey(e => e.PlaylistId);
-                entity.HasOne(e => e.Song).WithMany().HasForeignKey(e => e.SongId);
+                entity.HasMany(e => e.Songs).WithMany(e => e.Playlists);
             });
 
             OnModelCreatingPartial(modelBuilder);

@@ -9,5 +9,6 @@
         public string BackgroundPath { get; set; } = String.Empty;
         public string VideoPath { get; set; } = String.Empty;
         public string TxtPath { get; set; } = String.Empty;
+        public IEnumerable<UsToolsPlaylist> Playlists { get; } = null!;
     }
 }
