@@ -2,63 +2,110 @@
 @using global::Shared
 @using Microsoft.EntityFrameworkCore
 @using System.Globalization
+@using System.Linq
+@using PlaylistCreator.Models
 @inject IDbContextFactory<UltrastarContext> _dbFactory
 <PageTitle>Songs</PageTitle>
 
 <h1>Songs</h1>
 
-<table class="table">
+<input type="text" class="form-control" @oninput="e => SongsWithScores.Filter = e.Value.ToString()" placeholder="Filter">
+
+<table class="table table-sortable mt-3">
   <thead>
-    <tr>
-      <th scope="col">#</th>
-      <th scope="col">Artist</th>
-      <th scope="col">Title</th>
-      <th scope="col">Highscore</th>
-      <th scope="col">Highscore Holder</th>
-      <th scope="col">Highscore Date</th>
-    </tr>
+  <tr>
+    @foreach (var x in Enum.GetValues(typeof(SongsWithScoresModel.SortingType)).Cast<SongsWithScoresModel.SortingType>())
+    {
+      <th scope="col"><i class="oi @(SongsWithScores.OrderedBy == x && SongsWithScores.Ascending ? "oi-sort-descending" : "oi-sort-ascending")" @onclick="() => ChangeOrder(x)"></i> @x.ToString()</th>
+    }
+    <th/>
+  </tr>
   </thead>
   <tbody>
     @{
-      foreach (var x in SongAndScoreList)
+      foreach (var x in SongsWithScores.SongsWithScoresOrderedAndFiltered)
       {
         <tr>
-          <th scope = "row" > @x.Item1.Id </th>
-          <td> @x.Item1.Artist </td>
-          <td> @x.Item1.Title </td>
-          <td> @x.Item2?.Score </td>
-          <td> @x.Item2?.Player </td>
-          <td> @FromUnix(x.Item2?.Date!.Value) </td>
+          <th scope = "row" > @x.Song.Id </th>
+          <td> @x.Song.Artist </td>
+          <td> @x.Song.Title </td>
+          <td> @x.Score?.Score </td>
+          <td> @x.Score?.Player </td>
+          <td> @FromUnix(x.Score?.Date!.Value) </td>
+          <td>
+            <div class="dropdown">
+              @{
+                var playlists = Playlists.Where(p => p.Songs.All(s => s.Id != x.Song.Id)).ToList();
+                
+                <button class="btn btn-outline-success dropdown-toggle" disabled="@(!playlists.Any())" type="button" id="dropdownMenu2" data-bs-toggle="dropdown" aria-expanded="false">
+                  Add to
+                </button>
+                <ul class="dropdown-menu" aria-labelledby="dropdownMenu2">
+                  @foreach (var playlist in playlists)
+                  {
+                    <li><a class="dropdown-item" @onclick="() => AddToPlaylist(playlist.Id, x.Song)">@playlist.Name</a></li>
+                  }
+                </ul>
+              }
+            </div>
+          </td>
         </tr>
       }
     }
   </tbody>
 </table>
 
-
-<button class="btn btn-primary">Click me</button>
-
 @code {
 
-  List<Tuple<UsToolsSong, UsScore?>> SongAndScoreList
+  SongsWithScoresModel SongsWithScores { set; get; } = new SongsWithScoresModel(new List<UsToolsSong>(), new List<UsScore>());
+
+  List<UsToolsPlaylist> Playlists { get; set; } = new();
+
+  protected override void OnInitialized()
   {
-    get
+    Task.Run(async () =>
     {
-      using var context = _dbFactory.CreateDbContext();
+      await using var context = await _dbFactory.CreateDbContextAsync();
 
       var scores = context.UsScores.Include(s => s.Song).GroupBy(s => s.SongId).Select(scores => scores.OrderByDescending(s => s.Score).FirstOrDefault()).ToList();
       var songs = context.UsToolsSongs.ToList();
-      return songs.Select(song => Tuple.Create(song, scores.FirstOrDefault(score => score!.Song.Artist.Trim('\0') == song.Artist && score.Song.Title.Trim('\0') == song.Title))).ToList();
-    }
+
+      SongsWithScores = new SongsWithScoresModel(songs, scores!);
+      Playlists = context.UsToolsPlaylists.Include(p => p.Songs).ToList();
+
+      await InvokeAsync(StateHasChanged);
+    });
   }
-  
-  string FromUnix(long? sec)
+
+  void ChangeOrder(SongsWithScoresModel.SortingType newType)
+  {
+    if (newType == SongsWithScores.OrderedBy)
+      SongsWithScores.Ascending = !SongsWithScores.Ascending;
+    else
+      SongsWithScores.OrderedBy = newType;
+  }
+
+  async void AddToPlaylist(long playlistId, UsToolsSong song)
+  {
+    await using var context = await _dbFactory.CreateDbContextAsync();
+    
+    var playlist = context.UsToolsPlaylists.Include(p => p.Songs).FirstOrDefault(p => p.Id == playlistId);
+    var dbSong = context.UsToolsSongs.FirstOrDefault(s => s.Id == song.Id);
+
+    if (playlist is null || dbSong is null || playlist.Songs.Any(s => s.Id == song.Id))
+      return;
+    
+    playlist.Songs.Add(dbSong);
+    await context.SaveChangesAsync();
+  }
+
+  static string FromUnix(long? sec)
   {
     if (sec is null)
       return string.Empty;
     
     // Unix timestamp is seconds past epoch
-    DateTime dateTime = new DateTime(1970, 1, 1, 0, 0, 0, 0, DateTimeKind.Local);
+    var dateTime = new DateTime(1970, 1, 1, 0, 0, 0, 0, DateTimeKind.Local);
     dateTime = dateTime.AddSeconds( sec.Value );
     return dateTime.ToString(CultureInfo.CurrentCulture);
   }
