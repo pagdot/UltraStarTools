@@ -1,0 +1,205 @@
+@page "/playlists"
+@using global::Shared
+@using Microsoft.EntityFrameworkCore
+@using System.Globalization
+@using PlaylistCreator.Models
+@inject IDbContextFactory<UltrastarContext> _dbFactory
+<PageTitle>Playlists</PageTitle>
+
+<h1>Playlists</h1>
+
+<div class="btn-toolbar mb-3" role="toolbar">
+  <div class="input-group me-3" role="toolbar">
+    <select @bind="SelectedPlaylistId" class="form-select">
+      <option selected hidden value="">Select playlist</option>
+      <option value="-1">All songs</option>
+      @{
+        foreach (var pl in PlaylistList)
+        {
+          <option value="@pl.Id">@pl.Name</option>
+        }
+      }
+    </select>
+    <button class="btn btn-outline-danger me-3" type="button" disabled="@(SelectedPlaylistId is null or < 0 || !PlaylistList.Any())" @onclick="RemovePlaylist">Remove</button>
+  </div>
+
+  <div class="input-group" role="toolbar">
+    <input type="text" class="form-control" placeholder="Playlist name" aria-label="Playlist name" @bind="NewName" aria-describedby="basic-addon2">
+    <button class="btn btn-outline-success" type="button" id="button-addon2" @onclick="AddPlaylist">Add</button>
+  </div>
+</div>
+
+<table class="table table-sortable mt-3">
+  <thead>
+  <tr>
+    @foreach (var x in Enum.GetValues(typeof(SongsWithScoresModel.SortingType)).Cast<SongsWithScoresModel.SortingType>())
+    {
+      <th scope="col"><i class="oi @(SongsWithScores.OrderedBy == x && SongsWithScores.Ascending ? "oi-sort-descending" : "oi-sort-ascending")" @onclick="() => ChangeOrder(x)"></i> @x.ToString()</th>
+    }
+    <th/>
+  </tr>
+  </thead>
+  <tbody>
+  @{
+    var playlists = PlaylistList;
+      foreach (var x in SongsWithScores.SongsWithScoresOrderedAndFiltered)
+      {
+        <tr>
+          <th scope = "row" > @x.Song.Id </th>
+          <td> @x.Song.Artist </td>
+          <td> @x.Song.Title </td>
+          <td> @x.Score?.Score </td>
+          <td> @x.Score?.Player </td>
+          <td> @FromUnix(x.Score?.Date!.Value) </td>
+          <td>
+            <div class="input-group">
+              <div class="dropdown">
+                @{
+                  var availablePlaylists = playlists.Where(p => p.Songs.All(s => s.Id != x.Song.Id)).ToList();
+                  
+                  <button class="btn btn-outline-success dropdown-toggle" disabled="@(!availablePlaylists.Any())" type="button" id="dropdownMenu2" data-bs-toggle="dropdown" aria-expanded="false">
+                    Add to
+                  </button>
+                  <ul class="dropdown-menu" aria-labelledby="dropdownMenu2">
+                    @foreach (var playlist in availablePlaylists)
+                    {
+                      <li><a class="dropdown-item" @onclick="() => AddToPlaylist(playlist.Id, x.Song)">@playlist.Name</a></li>
+                    }
+                  </ul>
+                }
+              </div>
+              <button type="button" class="btn btn-outline-danger" disabled="@(SelectedPlaylistId < 0)" @onclick="() => RemoveFromPlaylist(SelectedPlaylistId, x.Song.Id)">Remove</button>
+            </div>
+          </td>
+        </tr>
+      }
+    }
+  </tbody>
+</table>
+
+@code {
+  List<UsScore> Scores { get; set; } = new();
+  List<UsToolsSong> Songs { get; set; } = new();
+
+  SongsWithScoresModel SongsWithScores { set; get; } = new(new List<UsToolsSong>(), new List<UsScore>());
+
+  string NewName { get; set; } = string.Empty;
+
+  long? _selectedPlaylistId;
+
+  long? SelectedPlaylistId
+  {
+    get => _selectedPlaylistId;
+    set
+    {
+      _selectedPlaylistId = value;
+      UpdateSongsWithScores(value);
+    }
+  }
+
+  List<UsToolsPlaylist> PlaylistList
+  {
+    get
+    {
+      using var context = _dbFactory.CreateDbContext();
+      return context.UsToolsPlaylists.Include(p => p.Songs).ToList(); //.Include(p => p.Songs).ToList();
+    }
+  }
+
+  protected override void OnInitialized()
+  {
+    Task.Run(async () =>
+    {
+      await using var context = await _dbFactory.CreateDbContextAsync();
+
+      Scores = context.UsScores.Include(s => s.Song).GroupBy(s => s.SongId).Select(scores => scores.OrderByDescending(s => s.Score).FirstOrDefault()).ToList()!;
+      Songs = context.UsToolsSongs.ToList();
+      
+      await InvokeAsync(StateHasChanged);
+    });
+  }
+
+  void UpdateSongsWithScores(long? playlistId)
+  {
+    SongsWithScores = new SongsWithScoresModel(playlistId is null ? new List<UsToolsSong>() : playlistId < 0 ? Songs : PlaylistList.FirstOrDefault(p => p.Id == playlistId)!.Songs, Scores);
+    StateHasChanged();
+  }
+
+  async void AddToPlaylist(long playlistId, UsToolsSong song)
+  {
+    await using var context = await _dbFactory.CreateDbContextAsync();
+    
+    var playlist = context.UsToolsPlaylists.Include(p => p.Songs).FirstOrDefault(p => p.Id == playlistId);
+    var dbSong = context.UsToolsSongs.FirstOrDefault(s => s.Id == song.Id);
+
+    if (dbSong is null)
+      return;
+    
+    playlist?.Songs.Add(dbSong);
+    await context.SaveChangesAsync();
+  }
+
+  async void AddPlaylist()
+  {
+    await using var context = await _dbFactory.CreateDbContextAsync();
+    context.UsToolsPlaylists.Add(new UsToolsPlaylist() {Name = NewName});
+    await context.SaveChangesAsync();
+    
+    NewName = string.Empty;
+  }
+
+  void ChangeOrder(SongsWithScoresModel.SortingType newType)
+  {
+    if (newType == SongsWithScores.OrderedBy)
+      SongsWithScores.Ascending = !SongsWithScores.Ascending;
+    else
+      SongsWithScores.OrderedBy = newType;
+  }
+
+
+  static string FromUnix(long? sec)
+  {
+    if (sec is null)
+      return string.Empty;
+    
+    // Unix timestamp is seconds past epoch
+    var dateTime = new DateTime(1970, 1, 1, 0, 0, 0, 0, DateTimeKind.Local);
+    dateTime = dateTime.AddSeconds( sec.Value );
+    return dateTime.ToString(CultureInfo.CurrentCulture);
+  }
+
+  private async void RemoveFromPlaylist(long? playlistId, long songId)
+  {
+    if (playlistId is null)
+      return;
+    
+    await using var context = await _dbFactory.CreateDbContextAsync();
+    
+    var playlist = context.UsToolsPlaylists.Include(s => s.Songs).FirstOrDefault(p => p.Id == playlistId);
+    var song = context.UsToolsSongs.FirstOrDefault(s => s.Id == songId);
+    
+    if (song is null)
+      return;
+    
+    playlist?.Songs.Remove(song);
+    await context.SaveChangesAsync();
+
+    UpdateSongsWithScores(playlistId);
+  }
+
+  private async void RemovePlaylist()
+  {
+    SongsWithScores = new SongsWithScoresModel(new List<UsToolsSong>(), new List<UsScore>());
+
+    await using var context = await _dbFactory.CreateDbContextAsync();
+
+    var playlist = PlaylistList.FirstOrDefault(p => p.Id == SelectedPlaylistId);
+    
+    if (playlist is null)
+      return;
+    
+    context.UsToolsPlaylists.Remove(playlist);
+    await context.SaveChangesAsync();
+  }
+
+}
