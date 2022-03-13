@@ -13,7 +13,7 @@ WORKDIR /app
 EXPOSE 8080
 VOLUME /data
 ENV ULTRASTAR_DB /data/Ultrastar.db
-ENV ASPNETCORE_URLS http://localhost:8080
+ENV ASPNETCORE_URLS http://0.0.0.0:8080
 ENV ASPNETCORE_ENVIRONMENT	Production
 
 COPY --from=build /app/publish .
