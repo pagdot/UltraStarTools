@@ -93,14 +93,14 @@ public class SongsWithScoresModel : INotifyPropertyChanged
 
   private void SortItems()
   {
-    Func<SongWithScoreModel,string> predicate = OrderedBy switch
+    Func<SongWithScoreModel,object> predicate = OrderedBy switch
     {
-      SortingType.Id => m => $"{m.Song.Id}",
+      SortingType.Id => m => m.Song.Id,
       SortingType.Artist => m => m.Song.Artist,
       SortingType.Title => m => m.Song.Title,
-      SortingType.Score => m => $"{m.Score?.Score ?? 0}",
+      SortingType.Score => m => m.Score?.Score ?? 0,
       SortingType.Player => m => m.Score?.Player ?? string.Empty,
-      SortingType.Date => m => $"{m.Score?.Date ?? 0}",
+      SortingType.Date => m => m.Score?.Date ?? DateTime.UnixEpoch,
       _ => throw new ArgumentOutOfRangeException()
     };
     
