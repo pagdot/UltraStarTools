@@ -7,6 +7,6 @@
         public long Difficulty { get; set; }
         public string Player { get; set; } = null!;
         public long Score { get; set; }
-        public long? Date { get; set; }
+        public DateTime Date { get; set; }
     }
 }

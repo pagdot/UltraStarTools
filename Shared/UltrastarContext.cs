@@ -34,6 +34,8 @@ namespace Shared
             {
                 entity.HasNoKey();
 
+                entity.Property(e => e.Date).HasConversion(d => ToUnix(d), d => FromUnix(d));
+
                 entity.ToTable("us_scores");
             });
 
@@ -100,5 +102,18 @@ namespace Shared
         }
 
         partial void OnModelCreatingPartial(ModelBuilder modelBuilder);
+    
+        private static long ToUnix(DateTime dateTime)
+        {
+            return dateTime.Subtract(DateTime.UnixEpoch.ToLocalTime()).Seconds;
+        }
+    
+        private static DateTime FromUnix(long sec)
+        {
+            // Unix timestamp is seconds past epoch
+            var dateTime = DateTime.UnixEpoch;
+            dateTime = dateTime.AddSeconds(sec);
+            return dateTime;
+        }
     }
 }

@@ -29,7 +29,7 @@
         <td> @context.Song.Title </td>
         <td> @context.Score?.Score </td>
         <td> @context.Score?.Player </td>
-        <td> @FromUnix(context.Score?.Date!.Value) </td>
+        <td> @context.Score?.Date.ToLocalTime() </td>
         <td>
           <div class="dropdown">
             @{
@@ -94,16 +94,5 @@
     
     playlist.Songs.Add(dbSong);
     await context.SaveChangesAsync();
-  }
-
-  static string FromUnix(long? sec)
-  {
-    if (sec is null)
-      return string.Empty;
-    
-    // Unix timestamp is seconds past epoch
-    var dateTime = new DateTime(1970, 1, 1, 0, 0, 0, 0, DateTimeKind.Local);
-    dateTime = dateTime.AddSeconds( sec.Value );
-    return dateTime.ToString(CultureInfo.CurrentCulture);
   }
 }
