@@ -32,14 +32,14 @@
   </div>
 </div>
 
-<table class="table table-sortable mt-3">
+<table class="table table-sortable mt-3 align-middle table-striped">
   <thead>
   <tr>
     @foreach (var x in Enum.GetValues(typeof(SongsWithScoresModel.SortingType)).Cast<SongsWithScoresModel.SortingType>())
     {
-      <th scope="col"><i class="oi @(SongsWithScores.OrderedBy == x && SongsWithScores.Ascending ? "oi-sort-descending" : "oi-sort-ascending")" @onclick="() => ChangeOrder(x)"></i> @x.ToString()</th>
+      <th class="bg-white sticky-top border-bottom border-dark" nowrap="nowrap"><i class="oi @(SongsWithScores.OrderedBy == x && SongsWithScores.Ascending ? "oi-sort-descending" : "oi-sort-ascending")" @onclick="() => ChangeOrder(x)"></i> @x.ToString()</th>
     }
-    <th/>
+    <th class="bg-white sticky-top border-bottom border-dark" nowrap="nowrap" />
   </tr>
   </thead>
   <tbody>
