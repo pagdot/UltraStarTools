@@ -9,7 +9,7 @@
 
 <h1>Songs</h1>
 
-<input type="text" class="form-control" @oninput="e => SongsWithScores.Filter = e.Value.ToString()" placeholder="Filter">
+<input type="text" class="form-control" @oninput="e => SongsWithScores.Filter = e.Value?.ToString() ?? string.Empty" placeholder="Filter">
 
 <table class="table table-sortable mt-3">
   <thead>

@@ -68,12 +68,12 @@ public class SongsWithScoresModel : INotifyPropertyChanged
                 song,
                 scores.FirstOrDefault(score => score.Song.Artist.Trim('\0') == song.Artist && score.Song.Title.Trim('\0') == song.Title))).ToList();
 
-        PropertyChanged += async (sender, args) =>
+        PropertyChanged += (_, args) =>
         {
           if (args.PropertyName is nameof(Ascending) or nameof(OrderedBy)) SortItems();
         };
         
-        PropertyChanged += async (sender, args) =>
+        PropertyChanged += (_, args) =>
         {
           if (args.PropertyName is nameof(Filter) or nameof(SongsWithScoresOrdered)) ApplyFilter();
         };
