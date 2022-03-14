@@ -36,7 +36,8 @@
               var playlists = Playlists.Where(p => p.Songs.All(s => s.Id != context.Song.Id)).ToList();
 
               <button class="btn btn-outline-success dropdown-toggle" disabled="@(!playlists.Any())" type="button" id="dropdownMenu2" data-bs-toggle="dropdown" aria-expanded="false">
-                Add to
+                <span class="d-none d-lg-inline align-middle">Add to</span>
+                <span class="d-lg-none oi oi-plus align-middle"></span>
               </button>
               <ul class="dropdown-menu" aria-labelledby="dropdownMenu2">
                 @foreach (var playlist in playlists)

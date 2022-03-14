@@ -10,8 +10,8 @@
 
 <h1>Playlists</h1>
 
-<div class="btn-toolbar mb-3" role="toolbar">
-  <div class="input-group me-3" role="toolbar">
+<div class="btn-toolbar" role="toolbar">
+  <div class="input-group me-3 mb-3" role="toolbar">
     <select @bind="SelectedPlaylistId" class="form-select">
       <option selected hidden value="">Select playlist</option>
       <option value="-1">All songs</option>
@@ -26,7 +26,7 @@
     <button class="btn btn-outline-danger me-3" type="button" disabled="@(SelectedPlaylistId is null or < 0 || !PlaylistList.Any())" @onclick="RemovePlaylist">Remove</button>
   </div>
 
-  <div class="input-group" role="toolbar">
+  <div class="input-group mb-3" role="toolbar">
     <input type="text" class="form-control" placeholder="Playlist name" aria-label="Playlist name" @bind="NewName" aria-describedby="basic-addon2">
     <button class="btn btn-outline-success" type="button" id="button-addon2" @onclick="AddPlaylist">Add</button>
   </div>
@@ -47,20 +47,22 @@
     var playlists = PlaylistList;
     
     <Virtualize Items="@SongsWithScores.SongsWithScoresOrderedAndFiltered" >
-        <tr>
-          <th scope = "row" > @context.Song.Id </th>
-          <td> @context.Song.Artist </td>
-          <td> @context.Song.Title </td>
-          <td> @context.Score?.Score </td>
-          <td> @context.Score?.Player </td>
-          <td> @FromUnix(context.Score?.Date!.Value) </td>
-          <td>
-            <div class="input-group">
-              @{
-                var availablePlaylists = playlists.Where(p => p.Songs.All(s => s.Id != context.Song.Id)).ToList();
+      <tr>
+        <td class="col-1"> @context.Song.Id </td>
+        <td class="col-2"> @context.Song.Artist </td>
+        <td class="col-3"> @context.Song.Title </td>
+        <td class="col-1"> @context.Score?.Score </td>
+        <td class="col-2"> @context.Score?.Player </td>
+        <td class="col-2"> @context.Score?.Date.ToLocalTime() </td>
+        <td>
+          <div class="btn-group d-flex flex-nowrap row-cols-2">
+            @{
+              var availablePlaylists = playlists.Where(p => p.Songs.All(s => s.Id != context.Song.Id)).ToList();
                 
-                <button class="btn btn-outline-success dropdown-toggle" disabled="@(!availablePlaylists.Any())" type="button" data-bs-toggle="dropdown" aria-expanded="false">
-                  Add to
+              <div class="btn-group">
+                <button class="btn btn-outline-success dropdown-toggle col-1" disabled="@(!availablePlaylists.Any())" type="button" data-bs-toggle="dropdown" aria-expanded="false">
+                  <span class="d-none d-lg-inline align-middle">Add to</span>
+                  <span class="d-lg-none oi oi-plus align-middle"></span>
                 </button>
                 <ul class="dropdown-menu">
                   @foreach (var playlist in availablePlaylists)
@@ -68,13 +70,17 @@
                     <li><a class="dropdown-item" @onclick="() => AddToPlaylist(playlist.Id, context.Song)">@playlist.Name</a></li>
                   }
                 </ul>
-              }
-              <button type="button" class="btn btn-outline-danger" disabled="@(SelectedPlaylistId < 0)" @onclick="() => RemoveFromPlaylist(SelectedPlaylistId, context.Song.Id)">Remove</button>
-            </div>
-          </td>
-        </tr>
+              </div>
+            }
+            <button type="button" class="btn btn-outline-danger col-1" disabled="@(SelectedPlaylistId < 0)" @onclick="() => RemoveFromPlaylist(SelectedPlaylistId, context.Song.Id)">
+                <span class="d-none d-lg-inline col align-middle">Remove</span>
+                <span class="d-lg-none oi oi-minus col align-middle"></span>
+            </button>
+          </div>
+        </td>
+      </tr>
     </Virtualize>
-    }
+  }
   </tbody>
 </table>
 
