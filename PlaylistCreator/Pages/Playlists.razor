@@ -35,11 +35,31 @@
 <table class="table table-sortable mt-3 align-middle table-striped">
   <thead>
   <tr>
+    <th bg-white sticky-top border-bottom border-dark><input class="form-check-input" type="checkbox" @bind="AllSelected"></th>
     @foreach (var x in Enum.GetValues(typeof(SongsWithScoresModel.SortingType)).Cast<SongsWithScoresModel.SortingType>())
     {
       <th class="bg-white sticky-top border-bottom border-dark" nowrap="nowrap"><a href="" @onclick="() => ChangeOrder(x)" @onclick:preventDefault class="text-reset text-decoration-none"><i class="oi @(SongsWithScores.OrderedBy == x && SongsWithScores.Ascending ? "oi-caret-top" : "oi-caret-bottom")"></i> @x.ToString()</a></th>
     }
-    <th class="bg-white sticky-top border-bottom border-dark" nowrap="nowrap" />
+    <th class="bg-white sticky-top border-bottom border-dark" nowrap="nowrap">
+      <div class="btn-group d-flex flex-nowrap row-cols-2">
+        <div class="btn-group">
+          <button class="btn btn-outline-success dropdown-toggle col-1" disabled="@(!PlaylistList.Any() || !SelectedSongs.Any())" type="button" data-bs-toggle="dropdown" aria-expanded="false">
+            <span class="d-none d-lg-inline align-middle">Add selected to</span>
+            <span class="d-lg-none oi oi-plus align-middle"></span>
+          </button>
+          <ul class="dropdown-menu">
+            @foreach (var playlist in PlaylistList.Where(p => p.Id != SelectedPlaylistId))
+            {
+              <li><a class="dropdown-item" @onclick="() => AddAllSelected(playlist.Id)">@playlist.Name</a></li>
+            }
+          </ul>
+        </div>
+        <button type="button" class="btn btn-outline-danger col-1" disabled="@(SelectedPlaylistId < 0 || !SelectedSongs.Any())" @onclick="RemoveAllSelected">
+          <span class="d-none d-lg-inline col align-middle">Remove selected</span>
+          <span class="d-lg-none oi oi-minus col align-middle"></span>
+        </button>
+      </div>
+      </th>
   </tr>
   </thead>
   <tbody>
@@ -48,6 +68,9 @@
     
     <Virtualize Items="@SongsWithScores.SongsWithScoresOrderedAndFiltered" >
       <tr>
+        @{
+          <th bg-white sticky-top border-bottom border-dark><input class="form-check-input" type="checkbox" checked="@SelectedSongs.Contains(context.Song.Id)" @onchange="(args) => {if (args.Value is bool ? (bool) args.Value : false) SelectedSongs.Add(context.Song.Id); else SelectedSongs.Remove(context.Song.Id);}" ></th>
+        }
         <td class="col-1"> @context.Song.Id </td>
         <td class="col-2"> @context.Song.Artist </td>
         <td class="col-3"> @context.Song.Title </td>
@@ -72,9 +95,9 @@
                 </ul>
               </div>
             }
-            <button type="button" class="btn btn-outline-danger col-1" disabled="@(SelectedPlaylistId < 0)" @onclick="() => RemoveFromPlaylist(SelectedPlaylistId, context.Song.Id)">
-                <span class="d-none d-lg-inline col align-middle">Remove</span>
-                <span class="d-lg-none oi oi-minus col align-middle"></span>
+            <button type="button" class="btn btn-outline-danger col-1" disabled="@(SelectedPlaylistId < 0)" @onclick="() => RemoveFromPlaylist(context.Song.Id)">
+              <span class="d-none d-lg-inline col align-middle">Remove</span>
+              <span class="d-lg-none oi oi-minus col align-middle"></span>
             </button>
           </div>
         </td>
@@ -90,6 +113,9 @@
 
   SongsWithScoresModel SongsWithScores { set; get; } = new(new List<UsToolsSong>(), new List<UsScore>());
 
+  HashSet<long> SelectedSongs { get; } = new();
+  bool _allSelected = false;
+
   string NewName { get; set; } = string.Empty;
 
   long? _selectedPlaylistId;
@@ -100,7 +126,26 @@
     set
     {
       _selectedPlaylistId = value;
+      SelectedSongs.Clear();
       UpdateSongsWithScores(value);
+    }
+  }
+
+  bool AllSelected
+  {
+    get => _allSelected;
+    set
+    {
+      _allSelected = value;
+      
+      SelectedSongs.Clear();
+
+      if (!value) return;
+      
+      foreach (var songWithScoreModel in SongsWithScores.SongsWithScoresOrderedAndFiltered)
+      {
+        SelectedSongs.Add(songWithScoreModel.Song.Id);
+      }
     }
   }
 
@@ -163,26 +208,14 @@
       SongsWithScores.OrderedBy = newType;
   }
 
-
-  static string FromUnix(long? sec)
+  private async void RemoveFromPlaylist(long songId)
   {
-    if (sec is null)
-      return string.Empty;
-    
-    // Unix timestamp is seconds past epoch
-    var dateTime = new DateTime(1970, 1, 1, 0, 0, 0, 0, DateTimeKind.Local);
-    dateTime = dateTime.AddSeconds( sec.Value );
-    return dateTime.ToString(CultureInfo.CurrentCulture);
-  }
-
-  private async void RemoveFromPlaylist(long? playlistId, long songId)
-  {
-    if (playlistId is null)
+    if (SelectedPlaylistId is null or < 0)
       return;
     
     await using var context = await _dbFactory.CreateDbContextAsync();
     
-    var playlist = context.UsToolsPlaylists.Include(s => s.Songs).FirstOrDefault(p => p.Id == playlistId);
+    var playlist = context.UsToolsPlaylists.Include(s => s.Songs).FirstOrDefault(p => p.Id == SelectedPlaylistId);
     var song = context.UsToolsSongs.FirstOrDefault(s => s.Id == songId);
     
     if (song is null)
@@ -191,7 +224,7 @@
     playlist?.Songs.Remove(song);
     await context.SaveChangesAsync();
 
-    UpdateSongsWithScores(playlistId);
+    UpdateSongsWithScores(SelectedPlaylistId);
   }
 
   private async void RemovePlaylist()
@@ -233,4 +266,42 @@
     await JS.InvokeVoidAsync("downloadFileFromStream", fileName, streamRef);
   }
 
+
+  private async Task AddAllSelected(long playlistId)
+  {
+    await using var context = await _dbFactory.CreateDbContextAsync();
+    var playlist = context.UsToolsPlaylists.Include(p => p.Songs).FirstOrDefault(p => p.Id == playlistId);
+    
+    foreach (var dbSong in SelectedSongs.Select(id => context.UsToolsSongs.FirstOrDefault(s => s.Id == id)))
+    {
+      if (dbSong is null || playlist is null || playlist.Songs.Contains(dbSong))
+        continue;;
+    
+      playlist.Songs.Add(dbSong);
+    }
+    
+    await context.SaveChangesAsync();
+  }
+
+  private async Task RemoveAllSelected()
+  {
+    if (SelectedPlaylistId is null or < 0)
+      return;
+    
+    await using var context = await _dbFactory.CreateDbContextAsync();
+    
+    var playlist = context.UsToolsPlaylists.Include(s => s.Songs).FirstOrDefault(p => p.Id == SelectedPlaylistId);
+
+    foreach (var dbSong in SelectedSongs.Select(id => context.UsToolsSongs.FirstOrDefault(s => s.Id == id)))
+    {
+      if (dbSong is null || playlist is null || !playlist.Songs.Contains(dbSong))
+        continue;;
+    
+      playlist.Songs.Remove(dbSong);
+    }
+    
+    await context.SaveChangesAsync();
+
+    UpdateSongsWithScores(SelectedPlaylistId);
+  }
 }
