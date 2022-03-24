@@ -16,7 +16,7 @@
   <tr>
     @foreach (var x in Enum.GetValues(typeof(SongsWithScoresModel.SortingType)).Cast<SongsWithScoresModel.SortingType>())
     {
-      <th class="bg-white sticky-top border-bottom border-dark" nowrap="nowrap" scope="col"><i class="oi @(SongsWithScores.OrderedBy == x && SongsWithScores.Ascending ? "oi-sort-descending" : "oi-sort-ascending")" @onclick="() => ChangeOrder(x)"></i> @x.ToString()</th>
+      <th class="bg-white sticky-top border-bottom border-dark" nowrap="nowrap" scope="col"><i href="#" class="oi @(SongsWithScores.OrderedBy == x && SongsWithScores.Ascending ? "oi-caret-top" : "oi-caret-bottom")" @onclick="() => ChangeOrder(x)"></i> @x.ToString()</th>
     }
     <th class="bg-white sticky-top border-bottom border-dark" nowrap="nowrap" />
   </tr>
