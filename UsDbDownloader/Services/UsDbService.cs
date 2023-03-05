@@ -8,8 +8,9 @@ using YoutubeExplode.Videos.Streams;
 
 namespace UsDbDownloader.Services;
 
-public partial class UsDbService
+public partial class UsDbService : IHostedService
 {
+    private readonly IOptions<UsDbLoginModel> _login;
     private readonly ILogger<UsDbService> _logger;
     private const string BaseUrl = "https://usdb.animux.de";
     private const string SessionCookieName = "PHPSESSID";
@@ -18,19 +19,17 @@ public partial class UsDbService
         UseCookies = true
     });
 
+    private CancellationTokenSource _cancellationTokenSource = new CancellationTokenSource();
+
     private readonly string _destination;
 
     public IEnumerable<UsDbSong> Songs { get; private set; } = new List<UsDbSong>();
 
     public UsDbService(IOptions<UsDbLoginModel> login, IOptions<SettingsModel> settings, ILogger<UsDbService> logger)
     {
+        _login = login;
         _logger = logger;
         _destination = settings.Value.Destination;
-        Task.Run(async () =>
-        {
-            await Login(login.Value.User, login.Value.Password);
-            await ScanSongs();
-        });
     }
 
     private async Task<bool> Login(string user, string password)
@@ -221,4 +220,21 @@ public partial class UsDbService
     
     [GeneratedRegex(@"^#COVER:.+$", RegexOptions.Multiline)]
     private static partial Regex CoverRegex();
+
+    public Task StartAsync(CancellationToken cancellationToken)
+    {
+        Task.Run(async () =>
+        {
+            await Login(_login.Value.User, _login.Value.Password);
+            await ScanSongs();
+            _logger.LogInformation($"Scraped basic info about {Songs.Count()} songs");
+        }, _cancellationTokenSource.Token);
+        return Task.CompletedTask;
+    }
+
+    public Task StopAsync(CancellationToken cancellationToken)
+    {
+        _cancellationTokenSource.Cancel();
+        return Task.CompletedTask;
+    }
 }

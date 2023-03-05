@@ -9,7 +9,7 @@ builder.Services.Configure<SettingsModel>(builder.Configuration.GetSection("Sett
 // Add services to the container.
 builder.Services.AddRazorPages();
 builder.Services.AddServerSideBlazor();
-builder.Services.AddSingleton<UsDbService>();
+builder.Services.AddHostedService<UsDbService>();
 var app = builder.Build();
 
 // Configure the HTTP request pipeline.
