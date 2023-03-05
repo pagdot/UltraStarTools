@@ -8,7 +8,7 @@ using YoutubeExplode.Videos.Streams;
 
 namespace UsDbDownloader.Services;
 
-public partial class UsDbService : IHostedService
+public partial class UsDbService
 {
     private readonly IOptions<UsDbLoginModel> _login;
     private readonly ILogger<UsDbService> _logger;
@@ -18,9 +18,7 @@ public partial class UsDbService : IHostedService
     {
         UseCookies = true
     });
-
-    private CancellationTokenSource _cancellationTokenSource = new CancellationTokenSource();
-
+    
     private readonly string _destination;
 
     public IEnumerable<UsDbSong> Songs { get; private set; } = new List<UsDbSong>();
@@ -32,15 +30,15 @@ public partial class UsDbService : IHostedService
         _destination = settings.Value.Destination;
     }
 
-    private async Task<bool> Login(string user, string password)
+    public async Task<bool> Login()
     {
         var response = await _httpClient.PostAsync(BaseUrl, new FormUrlEncodedContent(new[]
         {
-            new KeyValuePair<string, string>("user", user),
-            new KeyValuePair<string, string>("pass", password),
+            new KeyValuePair<string, string>("user", _login.Value.User),
+            new KeyValuePair<string, string>("pass", _login.Value.Password),
             new KeyValuePair<string, string>("login", "Login"),
         }));
-        return response.IsSuccessStatusCode && (await response.Content.ReadAsStringAsync()).Contains($"<b>{user}</b>");
+        return response.IsSuccessStatusCode && (await response.Content.ReadAsStringAsync()).Contains($"<b>{_login.Value.User}</b>");
     }
 
     private async Task<HtmlNode> LoadAsync(string url)
@@ -163,7 +161,7 @@ public partial class UsDbService : IHostedService
         }
     }
 
-    private async Task ScanSongs()
+    public async Task ScanSongs()
     {
         var artistEntryHrefRegex = ArtistEntryHrefRegex();
         var songEntryRegex = SongEntryRegex();
@@ -194,6 +192,8 @@ public partial class UsDbService : IHostedService
         }));
         
         Songs = (await Task.WhenAll(tasks)).SelectMany(x => x).ToList();
+        
+        _logger.LogInformation($"Scraped basic info about {Songs.Count()} songs");
     }
 
     [GeneratedRegex("^javascript:show\\(\"(.+?)\"\\)$")]
@@ -221,20 +221,4 @@ public partial class UsDbService : IHostedService
     [GeneratedRegex(@"^#COVER:.+$", RegexOptions.Multiline)]
     private static partial Regex CoverRegex();
 
-    public Task StartAsync(CancellationToken cancellationToken)
-    {
-        Task.Run(async () =>
-        {
-            await Login(_login.Value.User, _login.Value.Password);
-            await ScanSongs();
-            _logger.LogInformation($"Scraped basic info about {Songs.Count()} songs");
-        }, _cancellationTokenSource.Token);
-        return Task.CompletedTask;
-    }
-
-    public Task StopAsync(CancellationToken cancellationToken)
-    {
-        _cancellationTokenSource.Cancel();
-        return Task.CompletedTask;
-    }
 }
