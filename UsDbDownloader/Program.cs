@@ -4,6 +4,7 @@ using UsDbDownloader.Services;
 var builder = WebApplication.CreateBuilder(args);
 
 builder.Services.Configure<UsDbLoginModel>(builder.Configuration.GetSection("Login"));
+builder.Services.Configure<SettingsModel>(builder.Configuration.GetSection("Settings"));
 
 // Add services to the container.
 builder.Services.AddRazorPages();

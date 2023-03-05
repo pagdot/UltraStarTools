@@ -18,11 +18,14 @@ public partial class UsDbService
         UseCookies = true
     });
 
+    private readonly string _destination;
+
     public IEnumerable<UsDbSong> Songs { get; private set; } = new List<UsDbSong>();
 
-    public UsDbService(IOptions<UsDbLoginModel> login, ILogger<UsDbService> logger)
+    public UsDbService(IOptions<UsDbLoginModel> login, IOptions<SettingsModel> settings, ILogger<UsDbService> logger)
     {
         _logger = logger;
+        _destination = settings.Value.Destination;
         Task.Run(async () =>
         {
             await Login(login.Value.User, login.Value.Password);
@@ -110,7 +113,7 @@ public partial class UsDbService
             var coverRegex = CoverRegex();
 
             var name = $"{song.Artist} - {song.Title}";
-            var directory = $"songs/{name}";
+            var directory = $"{_destination}/{name}";
             Directory.CreateDirectory(directory);
             var txtPage = await PostAsync($"{BaseUrl}/index.php?link=gettxt&id={song.Id}", new FormUrlEncodedContent(new []{new KeyValuePair<string, string>("wd", "1")}));
             var baseContainer = txtPage.SelectSingleNode("/html/body/table/tr/td[3]/body/table[1]/center/tr/td/form/textarea");
