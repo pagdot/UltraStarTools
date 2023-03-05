@@ -29,4 +29,4 @@ jobs:
           # platforms: linux/arm,linux/amd64,linux/arm64/v8
           push: true
           tags: ghcr.io/pagdot/ultrastartools:latest
-          file: PlaylistCreator/Dockerfile
+          file: UsDbDownloader/Dockerfile

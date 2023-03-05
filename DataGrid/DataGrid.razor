@@ -1,0 +1,83 @@
+@typeparam TGridItem
+@using Microsoft.AspNetCore.Components.Web.Virtualization
+@using System.Runtime.Intrinsics.X86
+
+<CascadingValue TValue="DataGrid<TGridItem>" IsFixed="true" Value="@this">
+  @ChildContent
+  <table class="table mt-3 align-middle table-striped">
+    <thead>
+      <tr>
+        @foreach (var x in _columns)
+        {
+          <th class="bg-white sticky-top border-bottom border-dark" nowrap="nowrap" scope="col" style="width: @x.Width;">
+            @if (x.IsSortable)
+            {
+              <div @onclick="() => ChangeOrder(x)" class="text-reset text-decoration-none">
+                <i class="mdi @(OrderedBy == x ? OrderedAscending ? "mdi-sort-ascending" : "mdi-sort-descending" : "mdi-sort")"></i> 
+                
+                @if (x.HeaderTemplate is null)
+                {
+                  @x.Title
+                }
+                else
+                {
+                  @x.HeaderTemplate
+                }
+              </div>
+            }
+            else
+            {
+              if (x.HeaderTemplate is null)
+              {
+                @x.Title
+              }
+              else
+              {
+                @x.HeaderTemplate
+              }
+            }
+            @if (x.IsFilterable)
+            {
+              <div class="position-relative d-inline-flex align-items-center w-100">
+                <input class="form-control" id="@($"{x.Title}_Filter")" @bind="@x.FilterText" placeholder="Filter" @bind:event="oninput" />
+                <i class="mdi mdi-close-circle opacity-50 position-absolute @(string.IsNullOrEmpty(x.FilterText) ? "d-none" : "")" style="right: 10px; cursor: pointer; z-index: 100;" @onclick="() => x.FilterText = string.Empty"></i>
+              </div>
+            }
+          </th>
+        }
+      </tr>
+    </thead>
+    <tbody>
+    <Virtualize Items="@OrderedAndFilteredItems">
+      <tr>
+        @foreach (var x in _columns)
+        {
+          <td> @x.Render(context) </td>
+        }
+      </tr>
+    </Virtualize>
+    </tbody>
+  </table>
+</CascadingValue>
+
+
+@code {
+  
+  private BaseColumn<TGridItem>? OrderedBy { get; set; }
+  private bool OrderedAscending { get; set; }
+
+  private List<TGridItem> OrderedAndFilteredItems => OrderedBy?.Sort(FilteredItems, OrderedAscending).ToList() ?? FilteredItems.ToList();
+
+  private void ChangeOrder(BaseColumn<TGridItem> dataColumn)
+  {
+    if (dataColumn != OrderedBy)
+    {
+      OrderedBy = dataColumn;
+      OrderedAscending = true;
+    }
+    else
+    {
+      OrderedAscending = !OrderedAscending;
+    }
+  }
+}

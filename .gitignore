@@ -3,3 +3,6 @@ obj/
 /packages/
 riderModule.iml
 /_ReSharper.Caches/
+UsDbDownloader/.dockerignore
+appsettings.Development.json
+launchSettings.json
