@@ -1,0 +1,63 @@
+@page "/"
+@using System.Linq
+@using global::Shared
+@using Helper
+@using UsDbDownloader.Data
+@inject List<CompleteSong> Songs
+@inject Repository Repository
+<PageTitle>Songs</PageTitle>
+
+<h1>Songs</h1>
+
+<DataGrid Items="Songs">
+  <DataColumn Title="Artist" Field="@(x => x.Artist)" IsSortable="true" IsDefaultSort="true" IsFilterable="true" Width="33%"/>
+  <DataColumn Title="Title" Field="@(x => x.Title)" IsSortable="true" IsFilterable="true" Width="33%"/>
+  <DataColumn Title="Score" Field="@(x => x.HighScore)" IsSortable="true" IsFilterable="true" Width="33%"/>
+  <DataColumn Title="Player" Field="@(x => x.HighScoreHolder)" IsSortable="true" IsFilterable="true" Width="33%"/>
+  <DataColumn Title="Date" Field="@(x => x.HighScoreDate)" IsSortable="true" IsFilterable="true" Width="33%"/>
+
+  <TemplateColumn>
+    <BodyTemplate>
+      <div class="dropdown">
+        @{
+          var playlists = Playlists.Where(p => !p.Songs.Any(s => context.IsSameAs(s))).ToList();
+
+          <button class="btn btn-outline-success dropdown-toggle" disabled="@(!playlists.Any())" type="button" id="dropdownMenu2" data-bs-toggle="dropdown" aria-expanded="false">
+            <span class="d-none d-lg-inline align-middle">Add to</span>
+            <span class="d-lg-none oi oi-plus align-middle"></span>
+          </button>
+          <ul class="dropdown-menu" aria-labelledby="dropdownMenu2">
+            @foreach (var playlist in playlists)
+            {
+              <li><a class="dropdown-item" @onclick="() => AddToPlaylist(playlist, context)">@playlist.Name</a></li>
+            }
+          </ul>
+        }
+      </div>
+    </BodyTemplate>
+  </TemplateColumn>
+  @{
+  }
+</DataGrid>
+
+
+@code {
+
+  List<PlaylistModel> Playlists { get; set; } = new();
+
+  protected override async Task OnInitializedAsync()
+  {
+    await RefreshPlaylists();
+  }
+
+  private async Task RefreshPlaylists()
+  {
+    Playlists = (await Repository.GetPlaylistsAsync()).ToList();
+  }
+
+  async Task AddToPlaylist(PlaylistModel playlist, CompleteSong song)
+  {
+    await Repository.AddSongToPlaylistAsync(playlist, song);
+    await RefreshPlaylists();
+  }
+}
