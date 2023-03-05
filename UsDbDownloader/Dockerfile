@@ -9,6 +9,18 @@ RUN dotnet publish "UsDbDownloader.csproj" -c Release -o /app/publish
 
 
 FROM mcr.microsoft.com/dotnet/aspnet:7.0
+
+RUN echo "**** update package list ****" && \
+  apt update && \
+  echo "**** install ffmpeg ****" && \
+  apt install -y ffmpeg && \
+  echo "**** cleanup ****" && \
+  apt-get autoclean && \
+  rm -rf \
+    /var/lib/apt/lists/* \
+    /var/tmp/* \
+    /tmp/*
+
 WORKDIR /app
 EXPOSE 8080
 VOLUME /data
