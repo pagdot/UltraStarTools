@@ -1,4 +1,4 @@
-﻿FROM mcr.microsoft.com/dotnet/sdk:6.0 AS build
+﻿FROM mcr.microsoft.com/dotnet/sdk:7.0 AS build
 WORKDIR /src
 COPY ["UsDbDownloader/UsDbDownloader.csproj", "UsDbDownloader/"]
 COPY . .
@@ -8,7 +8,7 @@ RUN dotnet build "UsDbDownloader.csproj" -c Release -o /app/build
 RUN dotnet publish "UsDbDownloader.csproj" -c Release -o /app/publish
 
 
-FROM mcr.microsoft.com/dotnet/aspnet:6.0
+FROM mcr.microsoft.com/dotnet/aspnet:7.0
 WORKDIR /app
 EXPOSE 8080
 VOLUME /data
