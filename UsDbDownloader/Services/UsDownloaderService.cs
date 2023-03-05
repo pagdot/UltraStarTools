@@ -6,6 +6,12 @@ public class UsDownloaderService : IHostedService
     private readonly ILogger<UsDownloaderService> _logger;
     private CancellationTokenSource _cancellationTokenSource = new CancellationTokenSource();
 
+    public UsDownloaderService(UsDbService usDbService, ILogger<UsDownloaderService> logger)
+    {
+        _usDbService = usDbService;
+        _logger = logger;
+    }
+
     public Task StartAsync(CancellationToken cancellationToken)
     {
         Task.Run(async () =>
