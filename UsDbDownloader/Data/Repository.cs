@@ -10,7 +10,7 @@ public class Repository
 
     private static SongModel GetOrCreateSong(UltraToolsContext context, CompleteSong song)
     {
-        return context.Songs.FirstOrDefault(s => song.IsSameAs(s)) ?? context.Songs.Add(song.AsSongModel()).Entity;
+        return context.Songs.AsEnumerable().FirstOrDefault(song.IsSameAs) ?? context.Songs.Add(song.AsSongModel()).Entity;
     }
 
     public Repository(IDbContextFactory<UltraToolsContext> dbFactory)
@@ -18,10 +18,10 @@ public class Repository
         _dbFactory = dbFactory;
     }
 
-    public async Task<IQueryable<PlaylistModel>> GetPlaylistsAsync()
+    public async Task<List<PlaylistModel>> GetPlaylistsAsync()
     {
         await using var context = await _dbFactory.CreateDbContextAsync();
-        return context.Playlists.Include(p => p.Songs).AsNoTracking();
+        return context.Playlists.Include(p => p.Songs).AsNoTracking().ToList();
     }
 
     public async Task CreatePlaylistAsync(string name)

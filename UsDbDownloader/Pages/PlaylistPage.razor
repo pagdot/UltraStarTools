@@ -12,7 +12,7 @@
 
 <div class="btn-toolbar" role="toolbar">
   <div class="input-group me-3 mb-3" role="toolbar">
-    <select @bind="SelectedPlaylist" class="form-select">
+    <select @bind="SelectedPlaylistId" class="form-select">
       <option selected hidden value="">Select playlist</option>
       <option value="-1">All songs</option>
       @{
@@ -22,8 +22,8 @@
         }
       }
     </select>
-    <button class="btn btn-outline-warning" type="button" disabled="@(SelectedPlaylist is null || SelectedPlaylist.Id < 0 || !Playlists.Any())" @onclick="DownloadPlaylist">Download</button>
-    <button class="btn btn-outline-danger me-3" type="button" disabled="@(SelectedPlaylist is null || SelectedPlaylist.Id < 0 || !Playlists.Any())" @onclick="RemovePlaylist">Remove</button>
+    <button class="btn btn-outline-warning" type="button" disabled="@(SelectedPlaylist is null || !Playlists.Any())" @onclick="DownloadPlaylist">Download</button>
+    <button class="btn btn-outline-danger me-3" type="button" disabled="@(SelectedPlaylist is null  || !Playlists.Any())" @onclick="RemovePlaylist">Remove</button>
   </div>
 
   <div class="input-group mb-3" role="toolbar">
@@ -49,8 +49,6 @@
   <DataColumn Title="Player" Field="@(x => x.HighScoreHolder)" IsSortable="true" IsFilterable="true" Width="33%"/>
   <DataColumn Title="Date" Field="@(x => x.HighScoreDate)" IsSortable="true" IsFilterable="true" Width="33%"/>
 
-  @{
-    var playlists = Playlists;
     <TemplateColumn>
       <HeaderTemplate>
         <div class="btn-group d-flex flex-nowrap row-cols-2">
@@ -66,7 +64,7 @@
               }
             </ul>
           </div>
-          <button type="button" class="btn btn-outline-danger col-1" disabled="@(SelectedPlaylist is null || SelectedPlaylist.Id < 0 || !SelectedSongs.Any())" @onclick="RemoveAllSelected">
+          <button type="button" class="btn btn-outline-danger col-1" disabled="@(SelectedPlaylist is null || !SelectedSongs.Any())" @onclick="RemoveAllSelected">
             <span class="d-none d-lg-inline col align-middle">Remove selected</span>
             <span class="d-lg-none oi oi-minus col align-middle"></span>
           </button>
@@ -90,14 +88,13 @@
               </ul>
             </div>
           }
-          <button type="button" class="btn btn-outline-danger col-1" disabled="@(SelectedPlaylist is null || SelectedPlaylist.Id < 0)" @onclick="() => RemoveFromPlaylist(context)">
+          <button type="button" class="btn btn-outline-danger col-1" disabled="@(SelectedPlaylist is null)" @onclick="() => RemoveFromPlaylist(context)">
             <span class="d-none d-lg-inline col align-middle">Remove</span>
             <span class="d-lg-none oi oi-minus col align-middle"></span>
           </button>
         </div>
       </BodyTemplate>
     </TemplateColumn>
-  }
 </DataGrid>
 
 @code {
@@ -108,17 +105,20 @@
 
   string NewName { get; set; } = string.Empty;
 
-  PlaylistModel? _selectedPlaylist;
+  long? _selectedPlaylistId;
 
-  PlaylistModel? SelectedPlaylist
+  long? SelectedPlaylistId
   {
-    get => _selectedPlaylist;
+    get => _selectedPlaylistId;
     set
     {
-      _selectedPlaylist = value;
+      _selectedPlaylistId = value;
       SelectedSongs.Clear();
+      Songs = SelectedPlaylist?.Songs.Select(x => AllSongs.FirstOrDefault(y => y.IsSameAs(x))).OfType<CompleteSong>().ToList() ?? AllSongs;
     }
   }
+
+  PlaylistModel? SelectedPlaylist => SelectedPlaylistId is null or < 0 ? null : Playlists.Single(x => x.Id == SelectedPlaylistId);
 
   bool AllSelected
   {
@@ -142,13 +142,13 @@
 
   protected override async Task OnInitializedAsync()
   {
-    AllSongs = Songs;
+    Songs = AllSongs;
     await RefreshPlaylists();
   }
 
   private async Task RefreshPlaylists()
   {
-    Playlists = (await Repository.GetPlaylistsAsync()).ToList();
+    Playlists = await Repository.GetPlaylistsAsync();
   }
 
   async Task AddToPlaylist(PlaylistModel playlist, CompleteSong song)
@@ -166,7 +166,7 @@
 
   private async void RemoveFromPlaylist(CompleteSong song)
   {
-    if (SelectedPlaylist is null || SelectedPlaylist.Id < 0)
+    if (SelectedPlaylist is null)
       return;
 
     await Repository.RemoveSongFromPlaylistAsync(SelectedPlaylist, song);
@@ -175,7 +175,7 @@
 
   private async Task RemovePlaylist()
   {
-    if (SelectedPlaylist is null || SelectedPlaylist.Id < 0)
+    if (SelectedPlaylist is null)
       return;
     
     await Repository.RemovePlaylist(SelectedPlaylist);
@@ -213,7 +213,7 @@
 
   private async Task RemoveAllSelected()
   {
-    if (SelectedPlaylist is null || SelectedPlaylist.Id < 0)
+    if (SelectedPlaylist is null)
       return;
     
     await Repository.RemoveSongsFromPlaylistAsync(SelectedPlaylist, SelectedSongs);

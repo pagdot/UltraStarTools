@@ -7,7 +7,7 @@ using UsDbDownloader.Services;
 var builder = WebApplication.CreateBuilder(args);
 
 var songsFile = builder.Configuration.GetValue<string>("SongListFile");
-var songs = JsonSerializer.Deserialize<List<CompleteSong>>(songsFile);
+var songs = JsonSerializer.Deserialize<List<CompleteSong>>(File.ReadAllText(songsFile)).ToList();
 
 if (songs is null)
     throw new Exception($"SongListFile '[{songsFile}' has to exist!");
@@ -23,6 +23,8 @@ builder.Services.Configure<SettingsModel>(builder.Configuration.GetSection("Sett
 builder.Services.AddDbContextFactory<UltraToolsContext>(o => o.UseSqlite( $"Data Source={dbPath}"));
 builder.Services.AddRazorPages();
 builder.Services.AddServerSideBlazor();
+builder.Services.AddSingleton<List<CompleteSong>>(songs);
+builder.Services.AddScoped<Repository>();
 builder.Services.AddSingleton<UsDbService>();
 builder.Services.AddHostedService<UsDownloaderService>();
 var app = builder.Build();
@@ -43,5 +45,11 @@ app.UseRouting();
 
 app.MapBlazorHub();
 app.MapFallbackToPage("/_Host");
+
+using (var scope = app.Services.CreateScope())
+{
+    var db = scope.ServiceProvider.GetRequiredService<UltraToolsContext>();
+    db.Database.Migrate();
+}
 
 app.Run();

@@ -52,7 +52,7 @@
 
   private async Task RefreshPlaylists()
   {
-    Playlists = (await Repository.GetPlaylistsAsync()).ToList();
+    Playlists = await Repository.GetPlaylistsAsync();
   }
 
   async Task AddToPlaylist(PlaylistModel playlist, CompleteSong song)
