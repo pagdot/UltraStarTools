@@ -17,6 +17,8 @@ public abstract partial class BaseColumn<TGridItem> : ComponentBase
     [Parameter] public bool IsFilterable { get; set; }
 
     [Parameter] public string Title { get; set; } = string.Empty;
+    [Parameter] public string HeaderCssClass { get; set; } = string.Empty;
+    [Parameter] public string CssClass { get; set; } = string.Empty;
     [Parameter] public RenderFragment? HeaderTemplate { get; set; }
 
     public string FilterText

@@ -9,7 +9,7 @@
       <tr>
         @foreach (var x in _columns)
         {
-          <th class="bg-white sticky-top border-bottom border-dark" nowrap="nowrap" scope="col" style="width: @x.Width;">
+          <th class="@(x.HeaderCssClass)" nowrap="nowrap" scope="col" style="width: @x.Width;">
             @if (x.IsSortable)
             {
               <div @onclick="() => ChangeOrder(x)" class="text-reset text-decoration-none">
@@ -52,7 +52,7 @@
       <tr>
         @foreach (var x in _columns)
         {
-          <td> @x.Render(context) </td>
+          <td class="@(x.CssClass)"> @x.Render(context) </td>
         }
       </tr>
     </Virtualize>
