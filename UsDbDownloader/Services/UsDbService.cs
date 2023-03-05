@@ -114,6 +114,7 @@ public partial class UsDbService
 
             var name = $"{song.Artist} - {song.Title}";
             var directory = $"{_destination}/{name}";
+            _logger.LogInformation($"Downloading {song.Artist} - {song.Title} to '{directory}'");
             Directory.CreateDirectory(directory);
             var txtPage = await PostAsync($"{BaseUrl}/index.php?link=gettxt&id={song.Id}", new FormUrlEncodedContent(new []{new KeyValuePair<string, string>("wd", "1")}));
             var baseContainer = txtPage.SelectSingleNode("/html/body/table/tr/td[3]/body/table[1]/center/tr/td/form/textarea");
