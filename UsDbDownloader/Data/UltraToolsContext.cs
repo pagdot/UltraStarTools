@@ -4,7 +4,7 @@ namespace UsDbDownloader.Data;
 
 public class UltraToolsContext : DbContext
 {
-    public UltraToolsContext() : base()
+    public UltraToolsContext()
     {}
     
     public UltraToolsContext(DbContextOptions<UltraToolsContext> options)

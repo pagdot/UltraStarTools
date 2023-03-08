@@ -12,6 +12,10 @@ public class Repository
     {
         return context.Songs.AsEnumerable().FirstOrDefault(song.IsSameAs) ?? context.Songs.Add(song.AsSongModel()).Entity;
     }
+    private static SongModel? GetSong(UltraToolsContext context, CompleteSong song)
+    {
+        return context.Songs.AsEnumerable().FirstOrDefault(song.IsSameAs);
+    }
 
     public Repository(IDbContextFactory<UltraToolsContext> dbFactory)
     {
@@ -43,9 +47,13 @@ public class Repository
     public async Task RemoveSongFromPlaylistAsync(PlaylistModel playlist, CompleteSong song)
     {
         await using var context = await _dbFactory.CreateDbContextAsync();
-        var dbPlaylist = context.Playlists.FirstOrDefault(x => x.Id == playlist.Id) ??
-                         context.Playlists.Add(new PlaylistModel() {Name = playlist.Name}).Entity;
-        dbPlaylist.Songs.Remove(GetOrCreateSong(context, song));
+        var dbPlaylist = context.Playlists.Include(p => p.Songs).FirstOrDefault(x => x.Id == playlist.Id);
+        if (dbPlaylist is null)
+            return;
+        var dbSong = GetSong(context, song);
+        if (dbSong is null)
+            return;
+        dbPlaylist.Songs.Remove(dbSong);
         await context.SaveChangesAsync();
     }
 
@@ -70,7 +78,7 @@ public class Repository
     public async Task RemovePlaylist(PlaylistModel selectedPlaylist)
     {
         await using var context = await _dbFactory.CreateDbContextAsync();
-        context.Playlists.Remove(context.Playlists.Single(x => x.Id == selectedPlaylist.Id));
+        context.Playlists.Remove(selectedPlaylist);
         await context.SaveChangesAsync();
     }
 }

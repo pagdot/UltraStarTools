@@ -114,11 +114,11 @@
     {
       _selectedPlaylistId = value;
       SelectedSongs.Clear();
-      Songs = SelectedPlaylist?.Songs.Select(x => AllSongs.FirstOrDefault(y => y.IsSameAs(x))).OfType<CompleteSong>().ToList() ?? AllSongs;
+      RefreshSongs();
     }
   }
 
-  PlaylistModel? SelectedPlaylist => SelectedPlaylistId is null or < 0 ? null : Playlists.Single(x => x.Id == SelectedPlaylistId);
+  PlaylistModel? SelectedPlaylist => SelectedPlaylistId is null or < 0 ? null : Playlists.SingleOrDefault(x => x.Id == SelectedPlaylistId);
 
   bool AllSelected
   {
@@ -149,6 +149,12 @@
   private async Task RefreshPlaylists()
   {
     Playlists = await Repository.GetPlaylistsAsync();
+    RefreshSongs();
+  }
+
+  private void RefreshSongs()
+  {
+    Songs = SelectedPlaylist?.Songs.Select(x => AllSongs.FirstOrDefault(y => y.IsSameAs(x))).OfType<CompleteSong>().ToList() ?? AllSongs;
   }
 
   async Task AddToPlaylist(PlaylistModel playlist, CompleteSong song)
@@ -179,6 +185,7 @@
       return;
     
     await Repository.RemovePlaylist(SelectedPlaylist);
+    SelectedPlaylistId = -1;
     await RefreshPlaylists();
   }
 

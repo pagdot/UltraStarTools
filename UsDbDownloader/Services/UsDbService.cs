@@ -13,7 +13,6 @@ public partial class UsDbService
     private readonly IOptions<UsDbLoginModel> _login;
     private readonly ILogger<UsDbService> _logger;
     private const string BaseUrl = "https://usdb.animux.de";
-    private const string SessionCookieName = "PHPSESSID";
     private HttpClient _httpClient = new(new HttpClientHandler()
     {
         UseCookies = true
@@ -29,6 +28,8 @@ public partial class UsDbService
         _logger = logger;
         _destination = settings.Value.Destination;
     }
+    
+    private async Task<bool> IsLoggedIn(HttpResponseMessage response) => response.IsSuccessStatusCode && (await response.Content.ReadAsStringAsync()).Contains($"<b>{_login.Value.User}</b>");
 
     public async Task<bool> Login()
     {
@@ -38,12 +39,18 @@ public partial class UsDbService
             new KeyValuePair<string, string>("pass", _login.Value.Password),
             new KeyValuePair<string, string>("login", "Login"),
         }));
-        return response.IsSuccessStatusCode && (await response.Content.ReadAsStringAsync()).Contains($"<b>{_login.Value.User}</b>");
+        return await IsLoggedIn(response);
     }
 
     private async Task<HtmlNode> LoadAsync(string url)
     {
         var response = await _httpClient.GetAsync(url);
+        if (!await IsLoggedIn(response))
+        {
+            await Login();
+            response = await _httpClient.GetAsync(url);
+        }
+
         var content = new HtmlDocument();
         content.LoadHtml(await response.Content.ReadAsStringAsync());
         return content.DocumentNode;
@@ -52,6 +59,12 @@ public partial class UsDbService
     private async Task<HtmlNode> PostAsync(string url, HttpContent content)
     {
         var response = await _httpClient.PostAsync(url, content);
+        if (!await IsLoggedIn(response))
+        {
+            await Login();
+            response = await _httpClient.PostAsync(url, content);
+        }
+        
         var htmlContent = new HtmlDocument();
         htmlContent.LoadHtml(await response.Content.ReadAsStringAsync());
         return htmlContent.DocumentNode;
@@ -113,6 +126,7 @@ public partial class UsDbService
             var directory = $"{_destination}/{name}";
             _logger.LogInformation($"Downloading {song.Artist} - {song.Title} to '{directory}'");
             Directory.CreateDirectory(directory);
+            await Login();
             var txtPage = await PostAsync($"{BaseUrl}/index.php?link=gettxt&id={song.Id}", new FormUrlEncodedContent(new []{new KeyValuePair<string, string>("wd", "1")}));
             var baseContainer = txtPage.SelectSingleNode("/html/body/table/tr/td[3]/body/table[1]/center/tr/td/form/textarea");
             var txt = baseContainer.InnerText ?? string.Empty;
@@ -148,12 +162,17 @@ public partial class UsDbService
             var mp3StreamInfo = manifest.GetAudioOnlyStreams().Where(x => x.Container == Container.Mp4)
                 .GetWithHighestBitrate();
 
+            _logger.LogInformation("Starting Download of Video");
             await client.Videos.Streams.DownloadAsync(mp4StreamInfo, $"{directory}/{name}.mp4");
+            _logger.LogInformation("Video download finished");
+            _logger.LogInformation("Starting Download of MP3");
             await client.Videos.DownloadAsync(new[] {mp3StreamInfo},
                 new ConversionRequestBuilder($"{directory}/{name}.mp3").SetContainer(Container.Mp3).Build());
+            _logger.LogInformation("MP3 download finished");
 
             await File.WriteAllTextAsync($"{directory}/{name}.txt", txt);
             await File.WriteAllTextAsync($"{directory}/comments.html", song.Details.Comments);
+            _logger.LogInformation($"Finished downloading {song.Artist} - {song.Title}");
         }
         catch (Exception e)
         {
