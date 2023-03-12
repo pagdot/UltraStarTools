@@ -1,4 +1,4 @@
-namespace ScanSongLibrary;
+namespace Shared;
 
 public static class DateTimeExtensions
 {

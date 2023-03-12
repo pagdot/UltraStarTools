@@ -1,14 +1,13 @@
 ﻿using System.Text.Json;
 using Microsoft.EntityFrameworkCore;
-using ScanSongLibrary;
-using ScanSongLibrary.DbModel;
+using Shared;
+using Shared.DbModel;
 
 if (args.Length != 2)
 {
     Console.WriteLine($"Usage: {System.AppDomain.CurrentDomain.FriendlyName} <pathToSongFolder> <path to db>");
     return 1;
 }
-
 
 var songPath = args[0];
 if (!Directory.Exists(songPath))
@@ -27,8 +26,9 @@ var dbOptions = new DbContextOptionsBuilder<UltrastarContext>();
 dbOptions.UseSqlite($"Data Source={dbPath}");
 using var db = new UltrastarContext(dbOptions.Options);
 
-var songs = new UltraStarCrawler(songPath, db).Crawl();
+var crawledSongs = UltraStarCrawler.Crawl(songPath);
+var completeSongs = new SongCompleter(db).CompleteCrawledSongs(crawledSongs);
 
-Console.WriteLine(JsonSerializer.Serialize(songs));
+Console.WriteLine(JsonSerializer.Serialize(completeSongs));
 
 return 0;

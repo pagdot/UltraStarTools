@@ -1,0 +1,72 @@
+﻿@page "/request"
+@using UsDbDownloader.Data
+@inject UsDbService UsDbService
+@inject ILogger<RequestPage> Logger
+
+<PageTitle>USDB Search</PageTitle>
+
+<DataGrid Items="Results">
+    <DataColumn Title="Artist" Field="@(x => x.Artist)" IsSortable="true" IsDefaultSort="true" IsFilterable="true" HeaderCssClass="bg-white sticky-top border-bottom border-dark col"/>
+    <DataColumn Title="Title" Field="@(x => x.Title)" IsSortable="true" IsFilterable="true" HeaderCssClass="bg-white sticky-top border-bottom border-dark col"/>
+    <TemplateColumn Width="6rem" HeaderCssClass="bg-white sticky-top border-bottom border-dark">
+        <BodyTemplate>
+            @if (context.Details != null)
+            {
+                @if (!string.IsNullOrEmpty(context.Details.YoutubeId))
+                {
+                    <a class="mdi mdi-youtube me-1" href="@($"https://www.youtube.com/watch?v={context.Details.YoutubeId}")" target="_blank"></a>
+
+                    @if (!context.IsAlreadyDownloaded && !context.IsAlreadyAvailable)
+                    {
+                        <a class="mdi mdi-download text-success" href="#" @onclick="() => UsDbService.DownloadSong(context)" @onclick:preventDefault></a>                        
+                    }
+                }
+                else
+                {
+                    <Tooltip Text="No Youtube-Video found!">
+                        <a class="mdi mdi-download-off text-warning"></a>
+                    </Tooltip>
+                }
+            }
+            else
+            {
+                <a class="mdi mdi-reload text-info" href="#" @onclick="() => GetDetails(context)" @onclick:preventDefault></a>
+            }
+            @if (context.IsAlreadyAvailable)
+            {
+                <Tooltip Text="Song is already available!">
+                    <a class="mdi mdi-check-circle text-info"></a>
+                </Tooltip>
+            }
+            else if (context.IsAlreadyDownloaded)
+            {
+                <Tooltip Text="Song has been downloaded already!">
+                    <a class="mdi mdi-download-off text-info"></a>
+                </Tooltip>
+            }
+        </BodyTemplate>
+    </TemplateColumn>
+</DataGrid>
+
+@code {
+    private IEnumerable<UsDbSong> Results { get; set; } = new List<UsDbSong>();
+
+    private async Task GetDetails(UsDbSong song)
+    {
+        try
+        {
+            await UsDbService.GetDetails(song); 
+        }
+        catch (System.Exception e)
+        {
+            Logger.LogError(e.ToString());
+            return;
+        }
+        await InvokeAsync(StateHasChanged);
+    }
+
+    protected override void OnInitialized()
+    {
+        Results = UsDbService.Songs;
+    }
+}

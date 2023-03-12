@@ -2,6 +2,7 @@ using System.Globalization;
 using System.Text.RegularExpressions;
 using HtmlAgilityPack;
 using Microsoft.Extensions.Options;
+using Shared;
 using UsDbDownloader.Data;
 using YoutubeExplode.Converter;
 using YoutubeExplode.Videos.Streams;
@@ -12,6 +13,7 @@ public partial class UsDbService
 {
     private readonly IOptions<UsDbLoginModel> _login;
     private readonly ILogger<UsDbService> _logger;
+    private readonly List<CompleteSong> _availableSongs;
     private const string BaseUrl = "https://usdb.animux.de";
     private HttpClient _httpClient = new(new HttpClientHandler()
     {
@@ -22,11 +24,12 @@ public partial class UsDbService
 
     public IEnumerable<UsDbSong> Songs { get; private set; } = new List<UsDbSong>();
 
-    public UsDbService(IOptions<UsDbLoginModel> login, IOptions<SettingsModel> settings, ILogger<UsDbService> logger)
+    public UsDbService(IOptions<UsDbLoginModel> login, IOptions<SettingsModel> settings, ILogger<UsDbService> logger, List<CompleteSong> songs)
     {
         _login = login;
         _logger = logger;
         _destination = settings.Value.Destination;
+        _availableSongs = songs;
     }
     
     private async Task<bool> IsLoggedIn(HttpResponseMessage response) => response.IsSuccessStatusCode && (await response.Content.ReadAsStringAsync()).Contains($"<b>{_login.Value.User}</b>");
@@ -102,19 +105,19 @@ public partial class UsDbService
         }
         catch (Exception e)
         {
-            _logger.LogError($"Failed to get details for \"{song.Artist} - {song.Title}\": {e}");
+            throw new Exception($"Failed to get details for \"{song.Artist} - {song.Title}\"", e);
         }
         return song;
     }
 
-    public async Task DownloadSong(UsDbSong song)
+    public async Task<bool> DownloadSong(UsDbSong song)
     {
         try
         {
             if (song.Details is null)
                 song = await GetDetails(song);
 
-            if (song.Details is null)
+            if (song is null)
                 throw new Exception("Failed to fetch song details!");
             
             var youtubeRegex = YoutubeVideoRegex();
@@ -143,7 +146,7 @@ public partial class UsDbService
             if (string.IsNullOrEmpty(song.Details.YoutubeId))
             {
                 _logger.LogInformation("Skipping download for \"{song.Artitst} - {song.Title}\" because no audio+video was found");
-                return;
+                return false;
             }
 
             txt = audioRegex.Match(txt).Success
@@ -172,16 +175,21 @@ public partial class UsDbService
 
             await File.WriteAllTextAsync($"{directory}/{name}.txt", txt);
             await File.WriteAllTextAsync($"{directory}/comments.html", song.Details.Comments);
+            song.IsAlreadyDownloaded = true;
             _logger.LogInformation($"Finished downloading {song.Artist} - {song.Title}");
         }
         catch (Exception e)
         {
             _logger.LogError($"Failed to download \"{song.Artist} - {song.Title}\": {e}");
+            return false;
         }
+        return true;
     }
 
     public async Task ScanSongs()
     {
+        var downloadedSongs = UltraStarCrawler.Crawl(_destination);
+
         var artistEntryHrefRegex = ArtistEntryHrefRegex();
         var songEntryRegex = SongEntryRegex();
 
@@ -206,8 +214,13 @@ public partial class UsDbService
                 .Select(x => songEntryRegex.Matches(x.InnerText).Select(y =>
                     new Tuple<string, string, string>(y.Groups[1].Value, y.Groups[3].Value, y.Groups[2].Value)));
             return songMap.SelectMany(x => x.Select(y =>
-                new UsDbSong(artistMap.First(z => z.Item1 == y.Item1).Item2, y.Item2,
-                    int.Parse(y.Item3.Replace("?link=detail&id=", string.Empty)))));
+            {
+                var artist = artistMap.First(z => z.Item1 == y.Item1).Item2;
+                var isAlreadyAvailable = _availableSongs.Any(x => x.Artist == artist && x.Title == y.Item2);
+                var isAlreadyDownloaded = downloadedSongs.Any(x => x.Artist == artist && x.Title == y.Item2);
+                return new UsDbSong(artist, y.Item2,
+                    int.Parse(y.Item3.Replace("?link=detail&id=", string.Empty)), isAlreadyDownloaded, isAlreadyAvailable);
+            }));
         }));
         
         Songs = (await Task.WhenAll(tasks)).SelectMany(x => x).ToList();
