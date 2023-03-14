@@ -1,0 +1,16 @@
+services:
+  singstar:
+    build:
+      context: .
+      dockerfile: UsDbDownloader/Dockerfile
+    container_name: singstar
+    restart: unless-stopped
+    volumes:
+      - ./data:/data
+    ports: [ 8080:8080 ]
+    environment:
+      - LOGIN__USER=AzureDiamond # usdb.animux.de username
+      - LOGIN__PASSWORD=hunter2 # usdb.animux.de password  (http://bash.org/?244321)
+      - SETTINGS__DESTINATION=/data/songs/
+      - SONGLISTFILE=/data/songs.json
+      - DBPATH=/data/UltraTools.db
