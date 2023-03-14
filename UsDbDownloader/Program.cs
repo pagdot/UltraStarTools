@@ -7,10 +7,22 @@ using UsDbDownloader.Services;
 var builder = WebApplication.CreateBuilder(args);
 
 var songsFile = builder.Configuration.GetValue<string>("SongListFile");
-var songs = JsonSerializer.Deserialize<List<CompleteSong>>(File.ReadAllText(songsFile)).ToList();
+List<CompleteSong>? songs = null;
+
+try
+{
+    if (!string.IsNullOrEmpty(songsFile) && File.Exists(songsFile))
+        songs = JsonSerializer.Deserialize<List<CompleteSong>>(File.ReadAllText(songsFile))?.ToList() ?? new List<CompleteSong>();
+}
+catch
+{
+}
 
 if (songs is null)
-    throw new Exception($"SongListFile '[{songsFile}' has to exist!");
+{
+    Console.WriteLine($"'SongListFile' not specified or not found!");
+    songs = new List<CompleteSong>();
+}
 
 var dbPath = builder.Configuration.GetValue<string>("DbPath");
 if (string.IsNullOrEmpty(dbPath))
