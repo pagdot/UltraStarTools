@@ -131,8 +131,8 @@ public partial class UsDbService
             Directory.CreateDirectory(directory);
             await Login();
             var txtPage = await PostAsync($"{BaseUrl}/index.php?link=gettxt&id={song.Id}", new FormUrlEncodedContent(new []{new KeyValuePair<string, string>("wd", "1")}));
-            var baseContainer = txtPage.SelectSingleNode("/html/body/table/tr/td[3]/body/table[1]/center/tr/td/form/textarea");
-            var txt = baseContainer.InnerText ?? string.Empty;
+            var baseContainer = txtPage.SelectSingleNode("/html/body/table/tr/td[3]/body/table[1]/center/tr/td/form/textarea") ?? txtPage.SelectSingleNode("/html/body/table/tr/td[3]/body/table[1]/center/tr/td/textarea");
+            var txt = baseContainer?.InnerText ?? string.Empty;
             if (youtubeRegex.Match(txt) is { } match && match.Success)
                 song.Details.YoutubeId = match.Groups[1].Value;
 
