@@ -87,12 +87,15 @@ public partial class UsDbService
                 youtubeRegex.Match(commentNode.InnerHtml);
 
             var ratingCountMatch = songRatingCountRegex.Match(baseContainer.SelectSingleNode("tr[10]/td[2]").InnerText);
+
+            var bpmString = baseContainer.SelectSingleNode("tr[3]/td[2]").InnerText.Replace(',', '.');
+            var gapString = baseContainer.SelectSingleNode("tr[4]/td[2]").InnerText.Replace(',', '.');
         
             song.Details = new UsDbSongDetails(
                 youtubeMatch.Success ? youtubeMatch.Groups[1].Value : string.Empty,
                 baseContainer.SelectSingleNode("tr[2]/td[2]/center/img").GetAttributeValue("src", string.Empty),
-                double.Parse(baseContainer.SelectSingleNode("tr[3]/td[2]").InnerText.Replace(',', '.'), CultureInfo.InvariantCulture),
-                double.Parse(baseContainer.SelectSingleNode("tr[4]/td[2]").InnerText.Replace(',', '.')),
+                string.IsNullOrWhiteSpace(bpmString) ? 0.0 : double.Parse(bpmString, CultureInfo.InvariantCulture),
+                string.IsNullOrWhiteSpace(gapString) ? 0.0 : double.Parse(gapString, CultureInfo.InvariantCulture),
                 baseContainer.SelectSingleNode("tr[5]/td[2]").InnerText.Contains("yes", StringComparison.Ordinal),
                 baseContainer.SelectSingleNode("tr[6]/td[2]").InnerText.Contains("yes", StringComparison.Ordinal),
                 DateTime.ParseExact(baseContainer.SelectSingleNode("tr[7]/td[2]").InnerText, "dd.MM.yy - HH:mm", CultureInfo.InvariantCulture),
