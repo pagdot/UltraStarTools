@@ -4,12 +4,12 @@
 
 <CascadingValue TValue="DataGrid<TGridItem>" IsFixed="true" Value="@this">
   @ChildContent
-  <table class="table mt-3 align-middle table-striped">
+  <table class="table mt-3 align-middle table-striped container">
     <thead>
-      <tr>
+      <tr class="row">
         @foreach (var x in _columns)
         {
-          <th class="@(x.HeaderCssClass)" nowrap="nowrap" scope="col" style="width: @x.Width;">
+          <th class="@(string.IsNullOrEmpty(x.Width) ? "col" : "") @(x.HeaderCssClass)" nowrap="nowrap" scope="col" style="width: @x.Width;">
             @if (x.IsSortable)
             {
               <div @onclick="() => ChangeOrder(x)" class="text-reset text-decoration-none">
@@ -49,10 +49,10 @@
     </thead>
     <tbody>
     <Virtualize Items="@OrderedAndFilteredItems">
-      <tr>
+      <tr class="row" style="height: @RowHeight">
         @foreach (var x in _columns)
         {
-          <td class="@(x.CssClass)"> @x.Render(context) </td>
+          <td class="@(string.IsNullOrEmpty(x.Width) ? "col" : "") @(x.CssClass)" style="width: @x.Width;"> @x.Render(context) </td>
         }
       </tr>
     </Virtualize>

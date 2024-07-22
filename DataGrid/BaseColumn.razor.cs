@@ -37,5 +37,5 @@ public abstract partial class BaseColumn<TGridItem> : ComponentBase
     public abstract bool Filter(TGridItem item);
     
     [CascadingParameter] public DataGrid<TGridItem> GridContext { get; set; } = default!;
-    [Parameter] public string Width { get; set; } = "auto";
+    [Parameter] public string? Width { get; set; }
 }

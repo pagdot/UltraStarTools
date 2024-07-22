@@ -18,6 +18,7 @@ public partial class DataGrid<TGridItem>
 
     [Parameter] public IEnumerable<TGridItem> FilteredItems { get; set; } = Enumerable.Empty<TGridItem>();
     [Parameter] public RenderFragment? ChildContent { get; set; }
+    [Parameter] public string? RowHeight { get; set; }
 
     private List<BaseColumn<TGridItem>> _columns = new();
     private IEnumerable<TGridItem> _items = Enumerable.Empty<TGridItem>();
