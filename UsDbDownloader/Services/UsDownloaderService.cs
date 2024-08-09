@@ -16,8 +16,18 @@ public class UsDownloaderService : IHostedService
     {
         Task.Run(async () =>
         {
+            var random = new Random();
             await _usDbService.Login();
             await _usDbService.ScanSongs();
+
+            foreach (var song in _usDbService.Songs)
+            {
+                if (song.Details is { })
+                    continue;
+                    
+                await _usDbService.GetDetails(song);
+                Thread.Sleep(random.Next(1000, 10000));
+            }
         }, _cancellationTokenSource.Token);
         return Task.CompletedTask;
     }

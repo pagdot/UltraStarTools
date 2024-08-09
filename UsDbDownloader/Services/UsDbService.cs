@@ -82,27 +82,34 @@ public partial class UsDbService
             var youtubeRegex = YoutubeUrlRegex();
             var songRatingCountRegex = SongRatingCountRegex();
 
+            var imageSrc = baseContainer.SelectSingleNode("tr[2]/td[2]/center/img").GetAttributeValue("src", string.Empty);
+            var language = baseContainer.SelectSingleNode("tr[3]/td[2]").InnerText;
+
             var commentNode = songPage.SelectSingleNode("/html/body/table/tr/td[3]/body/table[2]");
             var youtubeMatch =
                 youtubeRegex.Match(commentNode.InnerHtml);
 
-            var ratingCountMatch = songRatingCountRegex.Match(baseContainer.SelectSingleNode("tr[10]/td[2]").InnerText);
-
-            var bpmString = baseContainer.SelectSingleNode("tr[3]/td[2]").InnerText.Replace(',', '.');
-            var gapString = baseContainer.SelectSingleNode("tr[4]/td[2]").InnerText.Replace(',', '.');
+            var bpmString = baseContainer.SelectSingleNode("tr[7]/td[2]").InnerText.Replace(',', '.');
+            var gapString = baseContainer.SelectSingleNode("tr[8]/td[2]").InnerText.Replace(',', '.');
+            var hasGoldenNotes = baseContainer.SelectSingleNode("tr[9]/td[2]").InnerText.Contains("yes", StringComparison.Ordinal);
+            var hasSongCheck = baseContainer.SelectSingleNode("tr[10]/td[2]").InnerText.Contains("yes", StringComparison.Ordinal);
+            var date = DateTime.ParseExact(baseContainer.SelectSingleNode("tr[11]/td[2]").InnerText, "dd.MM.yy - HH:mm", CultureInfo.InvariantCulture);
+            var rating = baseContainer.SelectNodes("tr[14]/td[2]/img")?
+                    .Count(x => x.GetAttributeValue("src", string.Empty).Contains("star.png")) ?? 0;
+            var ratingCountMatch = songRatingCountRegex.Match(baseContainer.SelectSingleNode("tr[14]/td[2]").InnerText);
         
             song.Details = new UsDbSongDetails(
                 youtubeMatch.Success ? youtubeMatch.Groups[1].Value : string.Empty,
-                baseContainer.SelectSingleNode("tr[2]/td[2]/center/img").GetAttributeValue("src", string.Empty),
+                imageSrc,
                 string.IsNullOrWhiteSpace(bpmString) ? 0.0 : double.Parse(bpmString, CultureInfo.InvariantCulture),
                 string.IsNullOrWhiteSpace(gapString) ? 0.0 : double.Parse(gapString, CultureInfo.InvariantCulture),
-                baseContainer.SelectSingleNode("tr[5]/td[2]").InnerText.Contains("yes", StringComparison.Ordinal),
-                baseContainer.SelectSingleNode("tr[6]/td[2]").InnerText.Contains("yes", StringComparison.Ordinal),
-                DateTime.ParseExact(baseContainer.SelectSingleNode("tr[7]/td[2]").InnerText, "dd.MM.yy - HH:mm", CultureInfo.InvariantCulture),
-                baseContainer.SelectNodes("tr[10]/td[2]/img")?
-                    .Count(x => x.GetAttributeValue("src", string.Empty).Contains("star.png")) ?? 0,
+                hasGoldenNotes,
+                hasSongCheck,
+                date,
+                rating,
                 ratingCountMatch.Success ? int.Parse(ratingCountMatch.Groups[1].Value) : 0,
-                commentNode.InnerHtml
+                commentNode.InnerHtml,
+                language
             );
 
         }
@@ -110,6 +117,9 @@ public partial class UsDbService
         {
             throw new Exception($"Failed to get details for \"{song.Artist} - {song.Title}\"", e);
         }
+
+        _logger.LogInformation($"Downloaded details for {song.Artist} - {song.Title}");
+
         return song;
     }
 

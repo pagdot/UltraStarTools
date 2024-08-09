@@ -20,10 +20,12 @@ public class SongCompleter
                 song.Artist.Equals(crawledSong.Artist, StringComparison.InvariantCultureIgnoreCase) &&
                 song.Title.Equals(crawledSong.Title, StringComparison.InvariantCultureIgnoreCase));
             
-            var highscore = _scores.OrderByDescending(x => x.Score).FirstOrDefault(x => 
-                x.Song.Artist.Equals(crawledSong.Artist, StringComparison.InvariantCultureIgnoreCase) &&
-                x.Song.Title.Equals(crawledSong.Title, StringComparison.InvariantCultureIgnoreCase));
+            var scores = _scores
+                .Where(x => 
+                    x.Song.Artist.Equals(crawledSong.Artist, StringComparison.InvariantCultureIgnoreCase) &&
+                    x.Song.Title.Equals(crawledSong.Title, StringComparison.InvariantCultureIgnoreCase))
+                .Select(x => new SimpleScore(x.Score, x.Player, x.Date));
 
-            return new CompleteSong(crawledSong.Artist, crawledSong.Title, song?.TimesPlayed, song?.Rating, highscore?.Score, highscore?.Player, highscore?.Date);
+            return new CompleteSong(crawledSong.Artist, crawledSong.Title, scores, song?.Rating);
         });
 }

@@ -10,13 +10,13 @@
 <h1>Songs</h1>
 
 <DataGrid Items="Songs">
-  <DataColumn Title="Artist" Field="@(x => x.Artist)" IsSortable="true" IsDefaultSort="true" IsFilterable="true" Width="33%"/>
-  <DataColumn Title="Title" Field="@(x => x.Title)" IsSortable="true" IsFilterable="true" Width="33%"/>
-  <DataColumn Title="Score" Field="@(x => x.HighScore)" IsSortable="true" IsFilterable="true" Width="33%"/>
-  <DataColumn Title="Player" Field="@(x => x.HighScoreHolder)" IsSortable="true" IsFilterable="true" Width="33%"/>
-  <DataColumn Title="Date" Field="@(x => x.HighScoreDate)" IsSortable="true" IsFilterable="true" Width="33%"/>
+  <DataColumn Title="Artist" Field="@(x => x.Artist)" IsSortable="true" IsDefaultSort="true" IsFilterable="true"/>
+  <DataColumn Title="Title" Field="@(x => x.Title)" IsSortable="true" IsFilterable="true"/>
+  <DataColumn Title="Score" Field="@(x => x.HighScore()?.Score.ToString() ?? string.Empty)" IsSortable="true" IsFilterable="true" Width="6em"/>
+  <DataColumn Title="Player" Field="@(x => x.HighScore()?.Holder ?? string.Empty)" IsSortable="true" IsFilterable="true" Width="6em"/>
+  <DataColumn Title="Date" Field="@(x => x.HighScore()?.DateTime.ToString() ?? string.Empty)" IsSortable="true" IsFilterable="true" Width="6em"/>
 
-  <TemplateColumn>
+  <TemplateColumn Width="12em">
     <BodyTemplate>
       <div class="dropdown">
         @{
