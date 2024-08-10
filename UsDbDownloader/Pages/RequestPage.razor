@@ -9,7 +9,7 @@
     <DataColumn Title="Artist" Field="@(x => x.Artist)" IsSortable="true" IsDefaultSort="true" IsFilterable="true" HeaderCssClass="bg-white sticky-top border-bottom border-dark col"/>
     <DataColumn Title="Title" Field="@(x => x.Title)" IsSortable="true" IsFilterable="true" HeaderCssClass="bg-white sticky-top border-bottom border-dark col"/>
     <DataColumn Title="Language" Field="@(x => x.Details?.Language ?? string.Empty)" IsSortable="true" IsFilterable="true" HeaderCssClass="bg-white sticky-top border-bottom border-dark col" Width="6em"/>
-    <DataColumn Title="Date" Field="@(x => x.Details?.Date.ToString() ?? string.Empty)" IsSortable="true" IsFilterable="true" HeaderCssClass="bg-white sticky-top border-bottom border-dark col" Width="6em"/>
+    <DataColumn Title="Date" Field="@(x => x.Details?.Date)" DisplayFunc="@(x => x?.ToString("d"))" IsSortable="true" IsFilterable="true" HeaderCssClass="bg-white sticky-top border-bottom border-dark col" Width="6em"/>
     <TemplateColumn Width="6rem" HeaderCssClass="bg-white sticky-top border-bottom border-dark">
         <BodyTemplate>
             @if (context.Details != null)
