@@ -14,7 +14,7 @@
       </PackageReference>
       <PackageReference Include="Microsoft.EntityFrameworkCore.Sqlite" Version="7.0.3" />
       <PackageReference Include="Microsoft.EntityFrameworkCore.Sqlite.Design" Version="1.1.6" />
-      <PackageReference Include="YoutubeExplode.Converter" Version="6.3.16" />
+      <PackageReference Include="YoutubeDLSharp" Version="1.1.1" />
     </ItemGroup>
 
     <ItemGroup>

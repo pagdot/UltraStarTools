@@ -7,13 +7,18 @@ RUN dotnet restore "UsDbDownloader.csproj"
 RUN dotnet build "UsDbDownloader.csproj" -c Release -o /app/build
 RUN dotnet publish "UsDbDownloader.csproj" -c Release -o /app/publish
 
+FROM ubuntu:jammy AS ytdlp-downloader
+RUN apt update && apt install -y wget git
+RUN wget -O /yt-dlp https://github.com/yt-dlp/yt-dlp/releases/latest/download/yt-dlp
+RUN chmod +x /yt-dlp
+RUN git clone https://github.com/coletdjnz/yt-dlp-youtube-oauth2
 
 FROM mcr.microsoft.com/dotnet/aspnet:8.0
 
 RUN echo "**** update package list ****" && \
   apt update && \
   echo "**** install ffmpeg ****" && \
-  apt install -y ffmpeg && \
+  apt install -y ffmpeg python3 && \
   echo "**** cleanup ****" && \
   apt-get autoclean && \
   rm -rf \
@@ -27,5 +32,10 @@ VOLUME /data
 ENV ASPNETCORE_URLS http://0.0.0.0:8080
 ENV ASPNETCORE_ENVIRONMENT	Production
 
+COPY "UsDbDownloader/entrypoint.sh" "./"
 COPY --from=build /app/publish .
-ENTRYPOINT ["dotnet", "UsDbDownloader.dll"]
+COPY --from=ytdlp-downloader /yt-dlp /usr/bin/
+COPY --from=ytdlp-downloader /yt-dlp-youtube-oauth2 /etc/yt-dlp/plugins/
+
+ENTRYPOINT ["/app/entrypoint.sh"]
+CMD ["dotnet", "UsDbDownloader.dll"]

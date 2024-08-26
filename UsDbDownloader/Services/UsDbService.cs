@@ -4,8 +4,8 @@ using HtmlAgilityPack;
 using Microsoft.Extensions.Options;
 using Shared;
 using UsDbDownloader.Data;
-using YoutubeExplode.Converter;
-using YoutubeExplode.Videos.Streams;
+using YoutubeDLSharp;
+using YoutubeDLSharp.Options;
 
 namespace UsDbDownloader.Services;
 
@@ -19,6 +19,7 @@ public partial class UsDbService
     {
         UseCookies = true
     });
+    private static readonly Option<string>[] _customOptions = new Option<string>[] { new("--username") { Value = "oauth2" }, new("--password") { Value = "" } };
     
     private readonly string _destination;
 
@@ -31,7 +32,22 @@ public partial class UsDbService
         _destination = settings.Value.Destination;
         _availableSongs = songs;
     }
-    
+
+    private static OptionSet GetYoutubeDlVideoOptions(string path) => new OptionSet()
+    {
+        FormatSort = "res:480,+size",
+        Format = "mp4",
+        CustomOptions = _customOptions
+    };
+
+    private static OptionSet GetYoutubeDlAudioOptions(string path) => new OptionSet()
+    {
+        FormatSort = "+size",
+        Format = "mp3",
+        CustomOptions = _customOptions,
+        Output = path
+    };
+
     private async Task<bool> IsLoggedIn(HttpResponseMessage response) => response.IsSuccessStatusCode && (await response.Content.ReadAsStringAsync()).Contains($"<b>{_login.Value.User}</b>");
 
     public async Task<bool> Login()
@@ -169,21 +185,18 @@ public partial class UsDbService
                 ? videoRegex.Replace(txt, $"#VIDEO:{name}.mp4")
                 : txt.Insert(0, $"#VIDEO:{name}.mp4\n");
 
-            var client = new YoutubeExplode.YoutubeClient();
-            var manifest = await client.Videos.Streams.GetManifestAsync(song.Details.YoutubeId);
-            var mp4StreamInfo = manifest
-                .GetVideoOnlyStreams()
-                .Where(s => s.Container == Container.Mp4 && s.VideoResolution.Height <= 480)
-                .GetWithHighestVideoQuality();
-            var mp3StreamInfo = manifest.GetAudioOnlyStreams().Where(x => x.Container == Container.Mp4)
-                .GetWithHighestBitrate();
+            var client = new YoutubeDL();
 
             _logger.LogInformation("Starting Download of Video");
-            await client.Videos.Streams.DownloadAsync(mp4StreamInfo, $"{directory}/{name}.mp4");
+            var result = await client.RunVideoDownload($"https://www.youtube.com/watch?v={song.Details.YoutubeId}", overrideOptions: GetYoutubeDlVideoOptions($"{directory}/{name}.mp4"));
+            if (!result.Success)
+                throw new Exception($"Failed to download video:\n{result.ErrorOutput}");
+
             _logger.LogInformation("Video download finished");
             _logger.LogInformation("Starting Download of MP3");
-            await client.Videos.DownloadAsync(new[] {mp3StreamInfo},
-                new ConversionRequestBuilder($"{directory}/{name}.mp3").SetContainer(Container.Mp3).Build());
+            result = await client.RunVideoDownload($"https://www.youtube.com/watch?v={song.Details.YoutubeId}", overrideOptions: GetYoutubeDlAudioOptions($"{directory}/{name}.mp4"));
+            if (!result.Success)
+                throw new Exception($"Failed to download audio:\n{result.ErrorOutput}");
             _logger.LogInformation("MP3 download finished");
 
             await File.WriteAllTextAsync($"{directory}/{name}.txt", txt);
