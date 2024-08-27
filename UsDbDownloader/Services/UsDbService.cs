@@ -44,9 +44,9 @@ public partial class UsDbService
     private static OptionSet GetYoutubeDlAudioOptions(string path) => new OptionSet()
     {
         FormatSort = "+size",
-        Format = "mp3",
+        Format = "bestaudio",
         CustomOptions = _customOptions,
-        Output = path
+        Output = path,
     };
 
     private async Task<bool> IsLoggedIn(HttpResponseMessage response) => response.IsSuccessStatusCode && (await response.Content.ReadAsStringAsync()).Contains($"<b>{_login.Value.User}</b>");
@@ -195,7 +195,7 @@ public partial class UsDbService
 
             _logger.LogInformation("Video download finished");
             _logger.LogInformation("Starting Download of MP3");
-            result = await client.RunVideoDownload($"https://www.youtube.com/watch?v={song.Details.YoutubeId}", overrideOptions: GetYoutubeDlAudioOptions($"{directory}/{name}.mp4"));
+            result = await client.RunAudioDownload($"https://www.youtube.com/watch?v={song.Details.YoutubeId}", AudioConversionFormat.Mp3, overrideOptions: GetYoutubeDlAudioOptions($"{directory}/{name}.mp3"));
             if (!result.Success)
                 throw new Exception($"Failed to download audio:\n{string.Join("\n", result.ErrorOutput)}");
             _logger.LogInformation("MP3 download finished");
