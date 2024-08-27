@@ -24,18 +24,21 @@ RUN echo "**** update package list ****" && \
   rm -rf \
     /var/lib/apt/lists/* \
     /var/tmp/* \
-    /tmp/*
+    /tmp/* && \
+  echo "**** Prepare data directory ****" && \
+  install -m 777 -d /data
 
 WORKDIR /app
 EXPOSE 8080
 VOLUME /data
 ENV ASPNETCORE_URLS http://0.0.0.0:8080
 ENV ASPNETCORE_ENVIRONMENT	Production
+ENV XDG_CACHE_HOME /data
 
 COPY "UsDbDownloader/entrypoint.sh" "./"
 COPY --from=build /app/publish .
 COPY --from=ytdlp-downloader /yt-dlp /usr/bin/
-COPY --from=ytdlp-downloader /yt-dlp-youtube-oauth2 /etc/yt-dlp/plugins/
+COPY --from=ytdlp-downloader /yt-dlp-youtube-oauth2/yt_dlp_plugins/ /etc/yt-dlp/plugins/yt-dlp-youtube-oauth2/yt_dlp_plugins/
 
 ENTRYPOINT ["/app/entrypoint.sh"]
 CMD ["dotnet", "UsDbDownloader.dll"]
