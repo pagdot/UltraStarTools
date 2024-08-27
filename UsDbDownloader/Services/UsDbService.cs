@@ -190,13 +190,13 @@ public partial class UsDbService
             _logger.LogInformation("Starting Download of Video");
             var result = await client.RunVideoDownload($"https://www.youtube.com/watch?v={song.Details.YoutubeId}", overrideOptions: GetYoutubeDlVideoOptions($"{directory}/{name}.mp4"));
             if (!result.Success)
-                throw new Exception($"Failed to download video:\n{result.ErrorOutput}");
+                throw new Exception($"Failed to download video:\n{string.Join("\n", result.ErrorOutput)}");
 
             _logger.LogInformation("Video download finished");
             _logger.LogInformation("Starting Download of MP3");
             result = await client.RunVideoDownload($"https://www.youtube.com/watch?v={song.Details.YoutubeId}", overrideOptions: GetYoutubeDlAudioOptions($"{directory}/{name}.mp4"));
             if (!result.Success)
-                throw new Exception($"Failed to download audio:\n{result.ErrorOutput}");
+                throw new Exception($"Failed to download audio:\n{string.Join("\n", result.ErrorOutput)}");
             _logger.LogInformation("MP3 download finished");
 
             await File.WriteAllTextAsync($"{directory}/{name}.txt", txt);
