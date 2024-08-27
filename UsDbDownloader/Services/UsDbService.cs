@@ -37,7 +37,8 @@ public partial class UsDbService
     {
         FormatSort = "res:480,+size",
         Format = "mp4",
-        CustomOptions = _customOptions
+        CustomOptions = _customOptions,
+        Output = path
     };
 
     private static OptionSet GetYoutubeDlAudioOptions(string path) => new OptionSet()
