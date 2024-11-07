@@ -37,7 +37,7 @@ public partial class UsDbService
     {
         FormatSort = "res:480,+size",
         Format = "mp4",
-        CustomOptions = _customOptions,
+        // CustomOptions = _customOptions,
         Output = path
     };
 
@@ -45,7 +45,7 @@ public partial class UsDbService
     {
         FormatSort = "+size",
         Format = "bestaudio",
-        CustomOptions = _customOptions,
+        // CustomOptions = _customOptions,
         Output = path,
     };
 
