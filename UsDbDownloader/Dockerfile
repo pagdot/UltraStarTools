@@ -8,10 +8,9 @@ RUN dotnet build "UsDbDownloader.csproj" -c Release -o /app/build
 RUN dotnet publish "UsDbDownloader.csproj" -c Release -o /app/publish
 
 FROM ubuntu:jammy AS ytdlp-downloader
-RUN apt update && apt install -y wget git
+RUN apt update && apt install -y wget
 RUN wget -O /yt-dlp https://github.com/yt-dlp/yt-dlp/releases/latest/download/yt-dlp
 RUN chmod +x /yt-dlp
-RUN git clone https://github.com/coletdjnz/yt-dlp-youtube-oauth2
 
 FROM mcr.microsoft.com/dotnet/aspnet:8.0
 
@@ -38,7 +37,6 @@ ENV XDG_CACHE_HOME /data
 COPY "UsDbDownloader/entrypoint.sh" "./"
 COPY --from=build /app/publish .
 COPY --from=ytdlp-downloader /yt-dlp /usr/bin/
-COPY --from=ytdlp-downloader /yt-dlp-youtube-oauth2/yt_dlp_plugins/ /etc/yt-dlp/plugins/yt-dlp-youtube-oauth2/yt_dlp_plugins/
 
 ENTRYPOINT ["/app/entrypoint.sh"]
 CMD ["dotnet", "UsDbDownloader.dll"]

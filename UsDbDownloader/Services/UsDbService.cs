@@ -19,9 +19,10 @@ public partial class UsDbService
     {
         UseCookies = true
     });
-    private static readonly Option<string>[] _customOptions = new Option<string>[] { new("--username") { Value = "oauth2" }, new("--password") { Value = "" } };
+    private static readonly IOption[] _oauthOptions = new Option<string>[] { new("--username") { Value = "oauth2" }, new("--password") { Value = "" } };
     
     private readonly string _destination;
+    private readonly bool _useOAuth;
 
     public IEnumerable<UsDbSong> Songs { get; private set; } = new List<UsDbSong>();
 
@@ -31,21 +32,22 @@ public partial class UsDbService
         _logger = logger;
         _destination = settings.Value.Destination;
         _availableSongs = songs;
+        _useOAuth = settings.Value.YtUseOAuth;
     }
 
-    private static OptionSet GetYoutubeDlVideoOptions(string path) => new OptionSet()
+    private OptionSet GetYoutubeDlVideoOptions(string path) => new OptionSet()
     {
         FormatSort = "res:480,+size",
         Format = "mp4",
-        // CustomOptions = _customOptions,
+        CustomOptions = _useOAuth ? _oauthOptions : [],
         Output = path
     };
 
-    private static OptionSet GetYoutubeDlAudioOptions(string path) => new OptionSet()
+    private OptionSet GetYoutubeDlAudioOptions(string path) => new OptionSet()
     {
         FormatSort = "+size",
         Format = "bestaudio",
-        // CustomOptions = _customOptions,
+        CustomOptions = _useOAuth ? _oauthOptions : [],
         Output = path,
     };
 
@@ -224,6 +226,8 @@ public partial class UsDbService
             .SelectNodes("/html/body/table/tr/td[3]/body/table/center/tr/td/h1/a")
             .Select(x => x.GetAttributeValue("href", null));
 
+        _logger.LogInformation($"Found {pages.Count()} pages to scrape");
+
         var tasks = pages.Select(page => Task.Run(async () =>
         {
             var baseContainer =
@@ -240,6 +244,9 @@ public partial class UsDbService
                 .SelectNodes("script")
                 .Select(x => songEntryRegex.Matches(x.InnerText).Select(y =>
                     new Tuple<string, string, string>(y.Groups[1].Value, y.Groups[3].Value, y.Groups[2].Value)));
+
+            _logger.LogDebug($"Scraped page {page}");
+
             return songMap.SelectMany(x => x.Select(y =>
             {
                 var artist = artistMap.First(z => z.Item1 == y.Item1).Item2;

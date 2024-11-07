@@ -1,15 +1,8 @@
 namespace UsDbDownloader.Data;
 
-public record SettingsModel
+public record SettingsModel(string Destination, bool YtUseOAuth)
 {
-    public SettingsModel(string destination)
+    public SettingsModel() : this("./songs", false)
     {
-        Destination = destination;
     }
-    public SettingsModel()
-    {
-        Destination = "./songs";
-    }
-
-    public string Destination { get; init; }
 }
