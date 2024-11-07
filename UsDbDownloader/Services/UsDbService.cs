@@ -19,7 +19,7 @@ public partial class UsDbService
     {
         UseCookies = true
     });
-    private static readonly IOption[] _oauthOptions = new Option<string>[] { new("--username") { Value = "oauth2" }, new("--password") { Value = "" } };
+    private static readonly IOption[] _oauthOptions = new Option<string>[] { new("--username") { Value = "oauth" }, new("--password") { Value = "" } };
     
     private readonly string _destination;
     private readonly bool _useOAuth;
