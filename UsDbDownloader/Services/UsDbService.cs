@@ -19,10 +19,9 @@ public partial class UsDbService
     {
         UseCookies = true
     });
-    private static readonly IOption[] _oauthOptions = new Option<string>[] { new("--username") { Value = "oauth" }, new("--password") { Value = "" } };
-    
+
     private readonly string _destination;
-    private readonly bool _useOAuth;
+    private readonly string _cookiePath;
 
     public IEnumerable<UsDbSong> Songs { get; private set; } = new List<UsDbSong>();
 
@@ -32,14 +31,14 @@ public partial class UsDbService
         _logger = logger;
         _destination = settings.Value.Destination;
         _availableSongs = songs;
-        _useOAuth = settings.Value.YtUseOAuth;
+        _cookiePath = settings.Value.CookiePath;
     }
 
     private OptionSet GetYoutubeDlVideoOptions(string path) => new OptionSet()
     {
         FormatSort = "res:480,+size",
         Format = "mp4",
-        CustomOptions = _useOAuth ? _oauthOptions : [],
+        Cookies = _cookiePath,
         Output = path
     };
 
@@ -47,7 +46,7 @@ public partial class UsDbService
     {
         FormatSort = "+size",
         Format = "bestaudio",
-        CustomOptions = _useOAuth ? _oauthOptions : [],
+        Cookies = _cookiePath,
         Output = path,
     };
 
@@ -55,6 +54,8 @@ public partial class UsDbService
 
     public async Task<bool> Login()
     {
+        _logger.LogInformation("Logging in to usdb...");
+        
         var response = await _httpClient.PostAsync(BaseUrl, new FormUrlEncodedContent(new[]
         {
             new KeyValuePair<string, string>("user", _login.Value.User),
@@ -66,6 +67,7 @@ public partial class UsDbService
 
     private async Task<HtmlNode> LoadAsync(string url)
     {
+        _logger.LogTrace($"Loading '{url}'");
         var response = await _httpClient.GetAsync(url);
         if (!await IsLoggedIn(response))
         {

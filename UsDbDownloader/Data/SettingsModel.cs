@@ -1,8 +1,8 @@
 namespace UsDbDownloader.Data;
 
-public record SettingsModel(string Destination, bool YtUseOAuth)
+public record SettingsModel(string Destination, string CookiePath)
 {
-    public SettingsModel() : this("./songs", false)
+    public SettingsModel() : this("./songs", "")
     {
     }
 }
