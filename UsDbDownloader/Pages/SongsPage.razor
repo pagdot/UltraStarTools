@@ -2,9 +2,7 @@
 @using System.Linq
 @using global::Shared
 @using Helper
-@using UsDbDownloader.Data
 @inject List<CompleteSong> Songs
-@inject Repository Repository
 <PageTitle>Songs</PageTitle>
 
 <h1>Songs</h1>
@@ -16,49 +14,6 @@
   <DataColumn Title="Scores" Field="@(x => x.Scores.Count())" IsSortable="true" IsFilterable="true" Width="6em"/>
   <DataColumn Title="Player" Field="@(x => x.HighScore()?.Holder ?? string.Empty)" IsSortable="true" IsFilterable="true" Width="6em"/>
   <DataColumn Title="Date" Field="@(x => x.HighScore()?.DateTime)" DisplayFunc="@(x => x?.ToString("d"))" IsSortable="true" IsFilterable="true" Width="6em"/>
-
-  <TemplateColumn Width="12em">
-    <BodyTemplate>
-      <div class="dropdown">
-        @{
-          var playlists = Playlists.Where(p => !p.Songs.Any(s => context.IsSameAs(s))).ToList();
-
-          <button class="btn btn-outline-success dropdown-toggle" disabled="@(!playlists.Any())" type="button" id="dropdownMenu2" data-bs-toggle="dropdown" aria-expanded="false">
-            <span class="d-none d-lg-inline align-middle">Add to</span>
-            <span class="d-lg-none oi oi-plus align-middle"></span>
-          </button>
-          <ul class="dropdown-menu" aria-labelledby="dropdownMenu2">
-            @foreach (var playlist in playlists)
-            {
-              <li><a class="dropdown-item" @onclick="() => AddToPlaylist(playlist, context)">@playlist.Name</a></li>
-            }
-          </ul>
-        }
-      </div>
-    </BodyTemplate>
-  </TemplateColumn>
   @{
   }
 </DataGrid>
-
-
-@code {
-
-  List<PlaylistModel> Playlists { get; set; } = new();
-
-  protected override async Task OnInitializedAsync()
-  {
-    await RefreshPlaylists();
-  }
-
-  private async Task RefreshPlaylists()
-  {
-    Playlists = await Repository.GetPlaylistsAsync();
-  }
-
-  async Task AddToPlaylist(PlaylistModel playlist, CompleteSong song)
-  {
-    await Repository.AddSongToPlaylistAsync(playlist, song);
-    await RefreshPlaylists();
-  }
-}
