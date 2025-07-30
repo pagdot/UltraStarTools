@@ -14,7 +14,7 @@
   <DataColumn Title="Title" Field="@(x => x.Title)" IsSortable="true" IsFilterable="true"/>
   <DataColumn Title="Score" Field="@(x => x.HighScore()?.Score.ToString() ?? string.Empty)" IsSortable="true" IsFilterable="true" Width="6em"/>
   <DataColumn Title="Player" Field="@(x => x.HighScore()?.Holder ?? string.Empty)" IsSortable="true" IsFilterable="true" Width="6em"/>
-  <DataColumn Title="Date" Field="@(x => x.HighScore()?.DateTime.ToString() ?? string.Empty)" IsSortable="true" IsFilterable="true" Width="6em"/>
+  <DataColumn Title="Date" Field="@(x => x.HighScore()?.DateTime)" DisplayFunc="@(x => x?.ToString("d"))" IsSortable="true" IsFilterable="true" Width="6em"/>
 
   <TemplateColumn Width="12em">
     <BodyTemplate>
